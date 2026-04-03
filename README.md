@@ -35,3 +35,33 @@ yarn add @klinecharts/pro
 
 ## ©️ License
 KLineChart Pro is available under the Apache License V2.
+
+## Internal Deployment (TradeStack)
+This project is configured to be deployed to the private AWS Artifactory for use in the TradeStack ecosystem.
+
+### Prerequisites
+1.  **Registry URL**: Update `publishConfig.registry` in `package.json` with your Artifactory NPM repository URL.
+2.  **Authentication**: Ensure you have authenticated with your Artifactory instance (e.g., via `npm login` or by providing an `.npmrc` file with the correct credentials). If using **AWS CodeArtifact**, run `aws codeartifact login` with your configuration.
+
+### Deployment
+To build and publish the library, you can use the provided `Makefile`:
+```bash
+make deploy
+```
+This command runs `npm run deploy`, which in turn builds the project and publishes it.
+
+Alternatively, you can use `npm` directly:
+```bash
+npm run deploy
+```
+Both methods will execute `npm run build` via the `prepublishOnly` script before publishing.
+
+### Usage in TradeStack
+In your TradeStack application, you can install this library from the private registry:
+```bash
+npm install tradestack-klinecharts-pro --save
+```
+Or with yarn:
+```bash
+yarn add tradestack-klinecharts-pro
+```

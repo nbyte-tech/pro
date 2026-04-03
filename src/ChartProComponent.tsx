@@ -113,12 +113,11 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
     setSymbol,
     getSymbol: () => symbol(),
     setPeriod,
-    getPeriod: () => period()
+    getPeriod: () => period(),
+    resize: () => {
+      widget?.resize()
+    }
   })
-
-  const documentResize = () => {
-    widget?.resize()
-  }
 
   const adjustFromTo = (period: Period, toTimestamp: number, count: number) => {
     let to = toTimestamp
@@ -173,7 +172,17 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
   }
 
   onMount(() => {
-    window.addEventListener('resize', documentResize)
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        if (widget) {
+          widget.removeOverlay()
+        }
+      }
+    }
+    window.addEventListener('keydown', handler)
+    onCleanup(() => {
+      window.removeEventListener('keydown', handler)
+    })
     widget = init(widgetRef!, {
       customApi: {
         formatDate: (dateTimeFormat: Intl.DateTimeFormat, timestamp, format: string, type: FormatDateType) => {
@@ -290,10 +299,17 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         }
       }
     })
+
+    const resizeObserver = new ResizeObserver(() => {
+      widget?.resize()
+    })
+    resizeObserver.observe(widgetRef!)
+    onCleanup(() => {
+      resizeObserver.disconnect()
+    })
   })
 
   onCleanup(() => {
-    window.removeEventListener('resize', documentResize)
     dispose(widgetRef!)
   })
 
@@ -536,7 +552,6 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         onMenuClick={async () => {
           try {
             await startTransition(() => setDrawingBarVisible(!drawingBarVisible()))
-            widget?.resize()
           } catch (e) {}    
         }}
         onSymbolClick={() => { setSymbolSearchModalVisible(!symbolSearchModalVisible()) }}
@@ -563,7 +578,9 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
             onModeChange={mode => { widget?.overrideOverlay({ mode: mode as OverlayMode }) }}
             onLockChange={lock => { widget?.overrideOverlay({ lock }) }}
             onVisibleChange={visible => { widget?.overrideOverlay({ visible }) }}
-            onRemoveClick={(groupId) => { widget?.removeOverlay({ groupId }) }}/>
+            onRemoveClick={(groupId) => {
+              widget?.removeOverlay({ groupId })
+            }}/>
         </Show>
         <div
           ref={widgetRef}

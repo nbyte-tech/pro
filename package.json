@@ -1,11 +1,14 @@
 {
-  "name": "@klinecharts/pro",
-  "version": "0.1.1",
+  "name": "tradestack-klinecharts-pro",
+  "version": "1.0.0",
   "description": "Financial chart built out of the box based on KLineChart.",
   "type": "module",
   "main": "./dist/klinecharts-pro.umd.js",
   "module": "./dist/klinecharts-pro.js",
   "types": "./dist/index.d.ts",
+  "publishConfig": {
+    "registry": "https://tradestack-154178079968.d.codeartifact.eu-west-1.amazonaws.com/npm/tradestack-artifactory/"
+  },
   "files": [
     "LICENSE",
     "README.md",
@@ -13,7 +16,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/klinecharts/pro"
+    "url": "https://github.com/nbyte-tech/pro"
   },
   "keywords": [
     "klinecharts",
@@ -31,6 +34,8 @@
     "build-core": "tsc && vite build",
     "build-dts": "dts-bundle-generator --no-banner true --umd-module-name klinechartspro -o dist/index.d.ts src/index.ts",
     "build": "npm run build-core && npm run build-dts",
+    "prepublishOnly": "npm run build",
+    "deploy": "npm publish",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
