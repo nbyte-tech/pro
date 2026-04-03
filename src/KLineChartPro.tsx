@@ -18,7 +18,7 @@ import { utils, Nullable, DeepPartial, Styles } from 'klinecharts'
 
 import ChartProComponent from './ChartProComponent'
 
-import { SymbolInfo, Period, ChartPro, ChartProOptions } from './types'
+import { SymbolInfo, Period, ChartPro, ChartProOptions, ChartConfig } from './types'
 
 import { Logo as LogoIcon } from './component'
 
@@ -71,7 +71,8 @@ export default class KLineChartPro implements ChartPro {
           timezone={options.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone}
           mainIndicators={options.mainIndicators ?? ['MA']}
           subIndicators={options.subIndicators ?? ['VOL']}
-          datafeed={options.datafeed}/>
+          datafeed={options.datafeed}
+          onConfigChange={options.onConfigChange}/>
       ),
       this._container
     )
@@ -135,6 +136,10 @@ export default class KLineChartPro implements ChartPro {
 
   resize (): void {
     this._chartApi!.resize()
+  }
+
+  extractChartConfigs (): ChartConfig {
+    return this._chartApi!.extractChartConfigs()
   }
 
   dispose (): void {

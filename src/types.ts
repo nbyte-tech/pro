@@ -53,9 +53,26 @@ export interface ChartProOptions {
   period: Period
   periods?: Period[]
   timezone?: string
-  mainIndicators?: string[]
-  subIndicators?: string[]
+  mainIndicators?: (string | IndicatorConfig)[]
+  subIndicators?: (string | IndicatorConfig)[]
   datafeed: Datafeed
+  onConfigChange?: (config: ChartConfig) => void
+}
+
+export interface IndicatorConfig {
+  name: string
+  calcParams?: any[]
+}
+
+export interface ChartConfig {
+  symbol: SymbolInfo
+  period: Period
+  timezone: string
+  mainIndicators: (string | IndicatorConfig)[]
+  subIndicators: (string | IndicatorConfig)[]
+  styles: DeepPartial<Styles>
+  theme: string
+  locale: string
 }
 
 export interface ChartPro {
@@ -73,4 +90,5 @@ export interface ChartPro {
   getPeriod(): Period
   resize(): void
   dispose(): void
+  extractChartConfigs(): ChartConfig
 }
