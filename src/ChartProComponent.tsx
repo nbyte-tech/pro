@@ -267,6 +267,52 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       priceUnitDom = document.createElement('span')
       priceUnitDom.className = 'klinecharts-pro-price-unit'
       priceUnitContainer?.appendChild(priceUnitDom)
+      if (priceUnitContainer) {
+        priceUnitContainer.addEventListener('wheel', (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          const rect = priceUnitContainer.getBoundingClientRect()
+          const delta = e.deltaY
+          if (delta === 0) {
+            return
+          }
+          const zoomFactor = Math.pow(0.95, -delta / 100)
+          const mouseY = e.clientY - rect.top
+
+          // @ts-expect-error
+          const pane = widget!._panes.get('candle_pane')
+          if (pane) {
+            const yAxis = pane.getAxisComponent()
+            const { min, max, range } = yAxis.getExtremum()
+            const mouseAxisValue = (1 - mouseY / rect.height) * range + min
+            const newTopAxisValue = mouseAxisValue + (max - mouseAxisValue) * zoomFactor
+            const newBottomAxisValue = mouseAxisValue - (mouseAxisValue - min) * zoomFactor
+            const newRange = newTopAxisValue - newBottomAxisValue
+
+            yAxis.setExtremum({
+              min: newBottomAxisValue,
+              max: newTopAxisValue,
+              range: newRange,
+              realMin: yAxis.convertToRealValue(newBottomAxisValue),
+              realMax: yAxis.convertToRealValue(newTopAxisValue),
+              realRange: yAxis.convertToRealValue(newTopAxisValue) - yAxis.convertToRealValue(newBottomAxisValue)
+            })
+            // @ts-expect-error
+            widget!.adjustPaneViewport(false, true, true, true, true)
+          }
+        }, { passive: false })
+
+        priceUnitContainer.addEventListener('dblclick', () => {
+          // @ts-expect-error
+          const pane = widget!._panes.get('candle_pane')
+          if (pane) {
+            const yAxis = pane.getAxisComponent()
+            yAxis.setAutoCalcTickFlag(true)
+            // @ts-expect-error
+            widget!.adjustPaneViewport(false, true, true, true, true)
+          }
+        })
+      }
     }
 
     mainIndicators().forEach(indicator => {
