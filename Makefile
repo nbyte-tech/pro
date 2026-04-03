@@ -4,7 +4,7 @@
 help:
 	@echo "Usage:"
 	@echo "  make build       - Build the project"
-	@echo "  make deploy      - Build and publish to Artifactory"
+	@echo "  make deploy      - Bump version, build, and publish to Artifactory"
 	@echo "  make publish     - Synonym for deploy"
 	@echo "  make clean       - Remove dist directory"
 
@@ -14,7 +14,7 @@ build:
 
 # Publish the library (pre-build included via npm prepublishOnly)
 deploy:
-	npm run build
+	npm version patch
 	npm run deploy
 
 # Synonym for deploy
