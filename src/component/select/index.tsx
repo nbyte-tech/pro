@@ -17,6 +17,7 @@ import { createSignal, Component, JSX } from 'solid-js'
 export interface SelectDataSourceItem {
   key: string
   text: JSX.Element
+  hotkey?: string
 }
 
 export interface SelectProps {

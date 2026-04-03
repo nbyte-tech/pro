@@ -60,6 +60,15 @@ import type { SelectDataSourceItem } from '../../../component'
 
 import i18n from '../../../i18n'
 
+const isMac = typeof navigator !== 'undefined' && /macintosh|mac os x/i.test(navigator.userAgent)
+const cmdKey = isMac ? '⌘' : 'Ctrl'
+const altKey = isMac ? '⌥' : 'Alt'
+
+export const formatHotkey = (key: string, type: 'cmd' | 'alt' = 'cmd') => {
+  const mod = type === 'cmd' ? cmdKey : altKey
+  return isMac ? `${mod}${key.toUpperCase()}` : `${mod}+${key.toUpperCase()}`
+}
+
 export const mapping = {
   horizontalStraightLine,
   horizontalRayLine,
@@ -102,17 +111,17 @@ export const mapping = {
 
 export function createSingleLineOptions (locale: string): SelectDataSourceItem[] {
   return  [
-    { key: 'horizontalStraightLine', text: i18n('horizontal_straight_line', locale) },
+    { key: 'horizontalStraightLine', text: i18n('horizontal_straight_line', locale), hotkey: formatHotkey('h', 'alt') },
     { key: 'horizontalRayLine', text: i18n('horizontal_ray_line', locale) },
     { key: 'horizontalSegment', text: i18n('horizontal_segment', locale) },
-    { key: 'verticalStraightLine', text: i18n('vertical_straight_line', locale) },
+    { key: 'verticalStraightLine', text: i18n('vertical_straight_line', locale), hotkey: formatHotkey('v', 'alt') },
     { key: 'verticalRayLine', text: i18n('vertical_ray_line', locale) },
     { key: 'verticalSegment', text: i18n('vertical_segment', locale) },
-    { key: 'straightLine', text: i18n('straight_line', locale) },
-    { key: 'rayLine', text: i18n('ray_line', locale) },
-    { key: 'segment', text: i18n('segment', locale) },
+    { key: 'straightLine', text: i18n('straight_line', locale), hotkey: formatHotkey('t', 'alt') },
+    { key: 'rayLine', text: i18n('ray_line', locale), hotkey: formatHotkey('j', 'alt') },
+    { key: 'segment', text: i18n('segment', locale), hotkey: formatHotkey('t', 'cmd') },
     { key: 'arrow', text: i18n('arrow', locale) },
-    { key: 'priceLine', text: i18n('price_line', locale) }
+    { key: 'priceLine', text: i18n('price_line', locale), hotkey: formatHotkey('p', 'alt') }
   ]
 }
 
@@ -134,13 +143,13 @@ export function createPolygonOptions (locale: string): SelectDataSourceItem[] {
 
 export function createFibonacciOptions (locale: string): SelectDataSourceItem[] {
   return [
-    { key: 'fibonacciLine', text: i18n('fibonacci_line', locale) },
+    { key: 'fibonacciLine', text: i18n('fibonacci_line', locale), hotkey: formatHotkey('f', 'alt') },
     { key: 'fibonacciSegment', text: i18n('fibonacci_segment', locale) },
     { key: 'fibonacciCircle', text: i18n('fibonacci_circle', locale) },
     { key: 'fibonacciSpiral', text: i18n('fibonacci_spiral', locale) },
     { key: 'fibonacciSpeedResistanceFan', text: i18n('fibonacci_speed_resistance_fan', locale) },
     { key: 'fibonacciExtension', text: i18n('fibonacci_extension', locale) },
-    { key: 'gannBox', text: i18n('gann_box', locale) }
+    { key: 'gannBox', text: i18n('gann_box', locale), hotkey: formatHotkey('g', 'alt') }
   ]
 }
 

@@ -42,15 +42,16 @@ const SettingModal: Component<SettingModalProps> = props => {
     setOptions(getOptions(props.locale))
   })
 
-  const update = (option: SelectDataSourceItem, newValue: any) => {
+  const update = (option: any, newValue: any) => {
     if (option.key === 'timezone') {
       setTimezone(newValue as SelectDataSourceItem)
       props.onTimezoneChange(newValue as SelectDataSourceItem)
     } else {
       const style = {}
-      lodashSet(style, option.key, newValue)
+      const val = option.component === 'select' ? (newValue as SelectDataSourceItem).key : newValue
+      lodashSet(style, option.key, val)
       const ss = utils.clone(styles())
-      lodashSet(ss, option.key, newValue)
+      lodashSet(ss, option.key, val)
       setStyles(ss)
       props.onChange(style)
     }

@@ -96,13 +96,24 @@
 
   "symbol_search": "商品搜索",
   "symbol_code": "商品代码",
+  "fast_length": "快线长度",
+  "slow_length": "慢线长度",
+  "signal_length": "信号线长度",
   "params_1": "参数1",
   "params_2": "参数2",
   "params_3": "参数3",
   "params_4": "参数4",
   "params_5": "参数5",
   "period": "周期",
+  "period_1": "周期1",
+  "period_2": "周期2",
+  "period_3": "周期3",
+  "period_4": "周期4",
+  "period_5": "周期5",
   "standard_deviation": "标准差",
+  "sar_start": "起始AF",
+  "sar_incremental": "递增AF",
+  "sar_max": "最大AF",
 
   "candle_type": "蜡烛图类型",
   "candle_solid": "全实心",
@@ -124,5 +135,7 @@
   "grid_show": "网格线显示",
   "extended_hours": "延长时段",
   "restore_default": "恢复默认",
-  "remove_selected": "删除选中"
+  "remove_selected": "删除选中的图形",
+  "remove_all": "删除所有图形",
+  "reset_chart": "重置图表"
 }

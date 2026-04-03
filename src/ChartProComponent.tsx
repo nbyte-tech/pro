@@ -39,6 +39,7 @@ import {
 } from './widget'
 
 import { translateTimezone } from './widget/setting-modal/data'
+import indicatorConfigs from './widget/indicator-setting-modal/data'
 
 import { SymbolInfo, Period, ChartProOptions, ChartPro } from './types'
 
@@ -55,18 +56,50 @@ function createIndicator (widget: Nullable<Chart>, indicatorName: string, isStac
   if (indicatorName === 'VOL') {
     paneOptions = { gap: { bottom: 2 }, ...paneOptions }
   }
+  // @ts-expect-error
+  const config = indicatorConfigs[indicatorName]
+  const calcParams = config?.map((c: any) => c.default).filter((d: any) => d !== undefined)
   return widget?.createIndicator({
     name: indicatorName,
+    calcParams: (calcParams && (calcParams.length > 0 || indicatorName === 'VOL')) ? calcParams : undefined,
+    regenerateFigures: indicatorName === 'VOL' ? () => {
+      return [
+        {
+          key: 'volume',
+          title: 'VOLUME: ',
+          type: 'bar',
+          baseValue: 0,
+          styles: (data, indicator, defaultStyles) => {
+            const kLineData = data.current.kLineData
+            if (kLineData) {
+              let color = utils.formatValue(indicator.styles, 'bars[0].noChangeColor', defaultStyles.bars[0].noChangeColor) as string
+              if (kLineData.close > kLineData.open) {
+                color = utils.formatValue(indicator.styles, 'bars[0].upColor', defaultStyles.bars[0].upColor) as string
+              } else if (kLineData.close < kLineData.open) {
+                color = utils.formatValue(indicator.styles, 'bars[0].downColor', defaultStyles.bars[0].downColor) as string
+              }
+              return { color }
+            }
+            return {}
+          }
+        }
+      ]
+    } : undefined,
     // @ts-expect-error
     createTooltipDataSource: ({ indicator, defaultStyles }) => {
       const icons = []
+      const showSetting = !!config && config.length > 0
       if (indicator.visible) {
         icons.push(defaultStyles.tooltip.icons[1])
-        icons.push(defaultStyles.tooltip.icons[2])
+        if (showSetting) {
+          icons.push(defaultStyles.tooltip.icons[2])
+        }
         icons.push(defaultStyles.tooltip.icons[3])
       } else {
         icons.push(defaultStyles.tooltip.icons[0])
-        icons.push(defaultStyles.tooltip.icons[2])
+        if (showSetting) {
+          icons.push(defaultStyles.tooltip.icons[2])
+        }
         icons.push(defaultStyles.tooltip.icons[3])
       }
       return { icons }
@@ -199,11 +232,71 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
     return totalMinutes >= 9 * 60 + 30 && totalMinutes < 16 * 60
   }
 
+  const resetChart = () => {
+    if (widget) {
+      widget.scrollToRealTime()
+      // @ts-expect-error
+      const pane = widget._panes.get('candle_pane')
+      if (pane) {
+        const yAxis = pane.getAxisComponent()
+        yAxis.setAutoCalcTickFlag(true)
+        // @ts-expect-error
+        widget.adjustPaneViewport(false, true, true, true, true)
+      }
+    }
+  }
+
   onMount(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Backspace' || e.key === 'Delete') {
         if (widget) {
-          widget.removeOverlay()
+          // @ts-expect-error
+          const instance = widget._chartStore.getOverlayStore().getClickInstanceInfo().instance
+          if (instance) {
+            widget.removeOverlay(instance.id)
+          }
+        }
+      } else {
+        const isMod = e.ctrlKey || e.metaKey
+        const isAlt = e.altKey
+        if (isMod || isAlt) {
+          const code = e.code
+          let overlayName = ''
+          if (code === 'KeyH' && isAlt) {
+            e.preventDefault()
+            overlayName = 'horizontalStraightLine'
+          } else if (code === 'KeyV' && isAlt) {
+            e.preventDefault()
+            overlayName = 'verticalStraightLine'
+          } else if (code === 'KeyT') {
+            e.preventDefault()
+            overlayName = isAlt ? 'straightLine' : 'segment'
+          } else if (code === 'KeyJ' && isAlt) {
+            e.preventDefault()
+            overlayName = 'rayLine'
+          } else if (code === 'KeyF' && isAlt) {
+            e.preventDefault()
+            overlayName = 'fibonacciLine'
+          } else if (code === 'KeyG' && isAlt) {
+            e.preventDefault()
+            overlayName = 'gannBox'
+          } else if (code === 'KeyP' && isAlt) {
+            e.preventDefault()
+            overlayName = 'priceLine'
+          } else if (code === 'KeyR' && isAlt) {
+            e.preventDefault()
+            resetChart()
+          } else if (code === 'KeyC' && isMod) {
+            // @ts-expect-error
+            const instance = widget?._chartStore.getOverlayStore().getClickInstanceInfo().instance
+            if (instance) {
+              widget?.removeOverlay(instance.id)
+            }
+          }
+
+          if (overlayName) {
+            widget?.createOverlay({ name: overlayName, groupId: 'drawing_tools' })
+          }
         }
       }
     }
@@ -709,9 +802,16 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
             onModeChange={mode => { widget?.overrideOverlay({ mode: mode as OverlayMode }) }}
             onLockChange={lock => { widget?.overrideOverlay({ lock }) }}
             onVisibleChange={visible => { widget?.overrideOverlay({ visible }) }}
-            onRemoveClick={(groupId) => {
-              widget?.removeOverlay({ groupId })
-            }}/>
+            onRemoveClick={(groupId, all) => {
+              // @ts-expect-error
+              const instance = widget?._chartStore.getOverlayStore().getClickInstanceInfo().instance
+              if (all || (all === undefined && !instance)) {
+                widget?.removeOverlay({ groupId })
+              } else if (instance) {
+                widget?.removeOverlay(instance.id)
+              }
+            }}
+            onResetClick={resetChart}/>
         </Show>
         <div
           ref={widgetRef}

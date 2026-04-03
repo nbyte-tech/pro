@@ -73,10 +73,18 @@
       max-height: 320px;
       li {
         padding-left: 16px;
+        padding-right: 16px;
+        display: flex;
+        align-items: center;
         .icon-overlay {
           &:hover {
             background-color: transparent;
           }
+        }
+        .hotkey {
+          margin-left: 20px;
+          font-size: 12px;
+          color: var(--klinecharts-pro-text-second-color);
         }
       }
     }
