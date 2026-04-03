@@ -33,10 +33,24 @@
     top: 50%;
     z-index: 1;
     transform: translateX(-50%) translateY(-50%);
-    .logo {
-      width: 160px;
-      height: 184px;
-      fill: var(--klinecharts-pro-border-color);
+    &-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      user-select: none;
+      pointer-events: none;
+      svg {
+        width: 160px;
+        height: 160px;
+        opacity: 30%;
+      }
+      .ticker {
+        font-size: 32px;
+        font-weight: bold;
+        color: var(--klinecharts-pro-text-color);
+        opacity: 0.2;
+        margin-top: 10px;
+      }
     }
   }
   &-price-unit {

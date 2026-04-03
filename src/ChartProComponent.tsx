@@ -13,6 +13,7 @@
  */
 
 import { createSignal, createEffect, onMount, Show, onCleanup, startTransition, Component } from 'solid-js'
+import { render } from 'solid-js/web'
 
 import {
   init, dispose, utils, Nullable, Chart, OverlayMode, Styles,
@@ -116,6 +117,11 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
     getPeriod: () => period(),
     resize: () => {
       widget?.resize()
+    },
+    dispose: () => {
+      if (widget) {
+        dispose(widget)
+      }
     }
   })
 
@@ -223,15 +229,16 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
     if (widget) {
       const watermarkContainer = widget.getDom('candle_pane', DomPosition.Main)
       if (watermarkContainer) {
-        let watermark = document.createElement('div')
-        watermark.className = 'klinecharts-pro-watermark'
-        if (utils.isString(props.watermark)) {
-          const str = (props.watermark as string).replace(/(^\s*)|(\s*$)/g, '')
-          watermark.innerHTML = str
-        } else {
-          watermark.appendChild(props.watermark as Node)
-        }
-        watermarkContainer.appendChild(watermark)
+        render(() => {
+          const wm = props.watermark
+          if (utils.isString(wm)) {
+            return <div class="klinecharts-pro-watermark" innerHTML={wm as string}/>
+          } else if (typeof wm === 'function') {
+            return <div class="klinecharts-pro-watermark">{wm(symbol())}</div>
+          } else {
+            return <div class="klinecharts-pro-watermark">{wm as Node}</div>
+          }
+        }, watermarkContainer)
       }
 
       const priceUnitContainer = widget.getDom('candle_pane', DomPosition.YAxis)

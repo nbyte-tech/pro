@@ -45,7 +45,7 @@ export interface Datafeed {
 export interface ChartProOptions {
   container: string | HTMLElement
   styles?: DeepPartial<Styles>
-  watermark?: string | Node
+  watermark?: any
   theme?: string
   locale?: string
   drawingBarVisible?: boolean
@@ -72,4 +72,5 @@ export interface ChartPro {
   setPeriod(period: Period): void
   getPeriod(): Period
   resize(): void
+  dispose(): void
 }
