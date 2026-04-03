@@ -59,9 +59,9 @@ Both methods will execute `npm run build` via the `prepublishOnly` script before
 ### Usage in TradeStack
 In your TradeStack application, you can install this library from the private registry:
 ```bash
-npm install tradestack-klinecharts-pro --save
+npm install @tradestack/klinecharts-pro --save
 ```
 Or with yarn:
 ```bash
-yarn add tradestack-klinecharts-pro
+yarn add @tradestack/klinecharts-pro
 ```
