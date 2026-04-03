@@ -26,13 +26,16 @@ import { getOptions } from './data'
 export interface SettingModalProps {
   locale: string
   currentStyles: Styles
+  timezone: SelectDataSourceItem
   onClose: () => void
   onChange: (style: DeepPartial<Styles>) => void
+  onTimezoneChange: (timezone: SelectDataSourceItem) => void
   onRestoreDefault: (options: SelectDataSourceItem[]) => void
 }
 
 const SettingModal: Component<SettingModalProps> = props => {
   const [styles, setStyles] = createSignal(props.currentStyles)
+  const [timezone, setTimezone] = createSignal(props.timezone)
   const [options, setOptions] = createSignal(getOptions(props.locale))
 
   createEffect(() => {
@@ -40,13 +43,18 @@ const SettingModal: Component<SettingModalProps> = props => {
   })
 
   const update = (option: SelectDataSourceItem, newValue: any) => {
-    const style = {}
-    lodashSet(style, option.key, newValue)
-    const ss = utils.clone(styles())
-    lodashSet(ss, option.key, newValue)
-    setStyles(ss)
+    if (option.key === 'timezone') {
+      setTimezone(newValue as SelectDataSourceItem)
+      props.onTimezoneChange(newValue as SelectDataSourceItem)
+    } else {
+      const style = {}
+      lodashSet(style, option.key, newValue)
+      const ss = utils.clone(styles())
+      lodashSet(ss, option.key, newValue)
+      setStyles(ss)
+      props.onChange(style)
+    }
     setOptions(options().map(op => ({ ...op })))
-    props.onChange(style)
   }
 
   return (
@@ -70,17 +78,22 @@ const SettingModal: Component<SettingModalProps> = props => {
             (option, index) => {
               const showGroup = () => index() === 0 || options()[index() - 1].group !== option.group
               let component
-              const value = utils.formatValue(styles(), option.key)
+              const value = option.key === 'timezone' ? timezone().key : utils.formatValue(styles(), option.key)
               switch (option.component) {
                 case 'select': {
+                  let displayValue: any
+                  if (option.key === 'timezone') {
+                    displayValue = timezone().text
+                  } else {
+                    displayValue = i18n(value as string, props.locale)
+                  }
                   component = (
                     <Select
                       style={{ width: '120px' }}
-                      value={i18n(value as string, props.locale)}
+                      value={displayValue}
                       dataSource={option.dataSource}
                       onSelected={(data) => {
-                        const newValue = (data as SelectDataSourceItem).key
-                        update(option, newValue)
+                        update(option, data)
                       }}/>
                   )
                   break

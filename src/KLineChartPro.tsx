@@ -20,33 +20,11 @@ import ChartProComponent from './ChartProComponent'
 
 import { SymbolInfo, Period, ChartPro, ChartProOptions } from './types'
 
+import { Logo as LogoIcon } from './component'
+
 const Logo = (symbol: SymbolInfo) => (
   <div class="klinecharts-pro-watermark-logo">
-    <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="strokeGlow" x1="30" y1="160" x2="170" y2="40" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#2563FF" />
-          <stop offset="100%" stop-color="#7FEFFF" />
-        </linearGradient>
-        <linearGradient id="fillTop" x1="45" y1="95" x2="155" y2="25" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#0B63F6" stop-opacity="0.35" />
-          <stop offset="100%" stop-color="#7FEFFF" stop-opacity="0.18" />
-        </linearGradient>
-        <linearGradient id="fillMid" x1="40" y1="125" x2="160" y2="70" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#0B63F6" stop-opacity="0.26" />
-          <stop offset="100%" stop-color="#7FEFFF" stop-opacity="0.14" />
-        </linearGradient>
-        <linearGradient id="fillBottom" x1="35" y1="170" x2="165" y2="105" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#0B63F6" stop-opacity="0.2" />
-          <stop offset="100%" stop-color="#7FEFFF" stop-opacity="0.12" />
-        </linearGradient>
-      </defs>
-      <g opacity="0.4">
-        <polygon points="100,102 174,140 100,178 26,140" fill="url(#fillBottom)" stroke="url(#strokeGlow)" stroke-width="4" stroke-linejoin="round" />
-        <polygon points="100,66 174,104 100,142 26,104" fill="url(#fillMid)" stroke="url(#strokeGlow)" stroke-width="4" stroke-linejoin="round" />
-        <polygon points="100,30 174,68 100,106 26,68" fill="url(#fillTop)" stroke="url(#strokeGlow)" stroke-width="4" stroke-linejoin="round" />
-      </g>
-    </svg>
+    <LogoIcon opacity={0.4} />
     <div class="ticker">{symbol.ticker}</div>
   </div>
 )
@@ -90,7 +68,7 @@ export default class KLineChartPro implements ChartPro {
               { multiplier: 1, timespan: 'year', text: 'Y' }
             ]
           }
-          timezone={options.timezone ?? 'Asia/Shanghai'}
+          timezone={options.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone}
           mainIndicators={options.mainIndicators ?? ['MA']}
           subIndicators={options.subIndicators ?? ['VOL']}
           datafeed={options.datafeed}/>

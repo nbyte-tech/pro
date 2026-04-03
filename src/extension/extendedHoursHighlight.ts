@@ -45,7 +45,7 @@ const extendedHoursHighlight: OverlayTemplate = {
     const visibleDataList = dataList.slice(startIndex, endIndex + 1)
 
     const getSession = (timestamp: number) => {
-      const nyTime = dayjs(timestamp).tz('America/New_York')
+      const nyTime = dayjs(timestamp)
       const hour = nyTime.hour()
       const minute = nyTime.minute()
       const totalMinutes = hour * 60 + minute

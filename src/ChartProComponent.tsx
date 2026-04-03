@@ -34,11 +34,11 @@ dayjs.extend(timezonePlugin)
 import { SelectDataSourceItem, Loading } from './component'
 
 import {
-  PeriodBar, DrawingBar, IndicatorModal, TimezoneModal, SettingModal,
+  PeriodBar, DrawingBar, IndicatorModal, SettingModal,
   ScreenshotModal, IndicatorSettingModal, SymbolSearchModal
 } from './widget'
 
-import { translateTimezone } from './widget/timezone-modal/data'
+import { translateTimezone } from './widget/setting-modal/data'
 
 import { SymbolInfo, Period, ChartProOptions, ChartPro } from './types'
 
@@ -91,7 +91,6 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
   const [mainIndicators, setMainIndicators] = createSignal([...(props.mainIndicators!)])
   const [subIndicators, setSubIndicators] = createSignal({})
 
-  const [timezoneModalVisible, setTimezoneModalVisible] = createSignal(false)
   const defaultTz = props.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
   const [timezone, setTimezone] = createSignal<SelectDataSourceItem>({ key: defaultTz, text: translateTimezone(defaultTz, props.locale) })
 
@@ -585,19 +584,13 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
             setSubIndicators(newSubIndicators)
           }}/>
       </Show>
-      <Show when={timezoneModalVisible()}>
-        <TimezoneModal
-          locale={props.locale}
-          timezone={timezone()}
-          onClose={() => { setTimezoneModalVisible(false) }}
-          onConfirm={setTimezone}
-        />
-      </Show>
       <Show when={settingModalVisible()}>
         <SettingModal
           locale={props.locale}
           currentStyles={styles() as any}
+          timezone={timezone()}
           onClose={() => { setSettingModalVisible(false) }}
+          onTimezoneChange={setTimezone}
           onChange={style => {
             widget?.setStyles(style)
             const newStyles = lodashClone(styles())
@@ -649,7 +642,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         onSymbolClick={() => { setSymbolSearchModalVisible(!symbolSearchModalVisible()) }}
         onPeriodChange={setPeriod}
         onIndicatorClick={() => { setIndicatorModalVisible((visible => !visible)) }}
-        onTimezoneClick={() => { setTimezoneModalVisible((visible => !visible)) }}
+        onTimezoneClick={() => { setSettingModalVisible((visible => !visible)) }}
         onSettingClick={() => { setSettingModalVisible((visible => !visible)) }}
         onScreenshotClick={() => {
           if (widget) {
