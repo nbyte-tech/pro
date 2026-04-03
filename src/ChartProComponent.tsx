@@ -131,7 +131,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
   const [timezone, setTimezone] = createSignal<SelectDataSourceItem>({ key: defaultTz, text: translateTimezone(defaultTz, props.locale) })
 
   const [settingModalVisible, setSettingModalVisible] = createSignal(false)
-  const [widgetDefaultStyles, setWidgetDefaultStyles] = createSignal<any>()
+  const [widgetDefaultStyles, setWidgetDefaultStyles] = createSignal<any>({})
 
   const [screenshotUrl, setScreenshotUrl] = createSignal('')
 
@@ -163,7 +163,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         const indicator = widget()?.getIndicatorByPaneId(paneId, name) as Indicator
         return { name, calcParams: indicator?.calcParams }
       }),
-      styles: styles(),
+      styles: lodashMerge({}, widgetDefaultStyles(), styles()),
       theme: theme(),
       locale: locale()
     }
@@ -216,7 +216,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
           const indicator = widget()?.getIndicatorByPaneId(paneId, name) as Indicator
           return { name, calcParams: indicator?.calcParams }
         }),
-        styles: styles(),
+        styles: lodashMerge({}, widgetDefaultStyles(), styles()),
         theme: theme(),
         locale: locale()
       }
@@ -679,9 +679,6 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
     if (w) {
       const themeStyles = w.getStyles()
       setWidgetDefaultStyles(lodashClone(themeStyles))
-      const newStyles = lodashClone(untrack(() => styles()))
-      lodashMerge(newStyles, themeStyles)
-      setStyles(newStyles)
     }
   })
 
@@ -730,8 +727,11 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
   })
 
   createEffect(() => {
-    if (styles()) {
-      widget()?.setStyles(styles())
+    const w = widget()
+    const s = styles()
+    if (w && s) {
+      widgetDefaultStyles()
+      w.setStyles(s)
     }
   })
 
@@ -785,7 +785,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       <Show when={settingModalVisible()}>
         <SettingModal
           locale={props.locale}
-          currentStyles={styles() as any}
+          currentStyles={lodashMerge({}, widgetDefaultStyles(), styles()) as any}
           timezone={timezone()}
           onClose={() => { setSettingModalVisible(false) }}
           onTimezoneChange={setTimezone}
