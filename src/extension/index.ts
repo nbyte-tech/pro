@@ -16,13 +16,15 @@ import eightWaves from './eightWaves'
 import anyWaves from './anyWaves'
 import abcd from './abcd'
 import xabcd from './xabcd'
+import extendedHoursHighlight from './extendedHoursHighlight'
 
 const overlays = [
   arrow,
   circle, rect, triangle, parallelogram,
   fibonacciCircle, fibonacciSegment, fibonacciSpiral,
   fibonacciSpeedResistanceFan, fibonacciExtension, gannBox,
-  threeWaves, fiveWaves, eightWaves, anyWaves, abcd, xabcd
+  threeWaves, fiveWaves, eightWaves, anyWaves, abcd, xabcd,
+  extendedHoursHighlight
 ]
 
 export default overlays

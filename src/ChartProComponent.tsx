@@ -12,16 +12,24 @@
  * limitations under the License.
  */
 
-import { createSignal, createEffect, onMount, Show, onCleanup, startTransition, Component } from 'solid-js'
+import { createSignal, createEffect, onMount, Show, onCleanup, startTransition, Component, untrack } from 'solid-js'
 import { render } from 'solid-js/web'
 
 import {
-  init, dispose, utils, Nullable, Chart, OverlayMode, Styles,
+  init, dispose, utils, Nullable, Chart, OverlayMode, Styles, DeepPartial,
   TooltipIconPosition, ActionType, PaneOptions, Indicator, DomPosition, FormatDateType
 } from 'klinecharts'
 
 import lodashSet from 'lodash/set'
 import lodashClone from 'lodash/cloneDeep'
+import lodashMerge from 'lodash/merge'
+
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezonePlugin from 'dayjs/plugin/timezone'
+
+dayjs.extend(utc)
+dayjs.extend(timezonePlugin)
 
 import { SelectDataSourceItem, Loading } from './component'
 
@@ -72,10 +80,9 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
 
   let priceUnitDom: HTMLElement
 
-  let loading = false
-
+  const [loading, setLoading] = createSignal(false)
   const [theme, setTheme] = createSignal(props.theme)
-  const [styles, setStyles] = createSignal(props.styles)
+  const [styles, setStyles] = createSignal<any>(props.styles)
   const [locale, setLocale] = createSignal(props.locale)
 
   const [symbol, setSymbol] = createSignal(props.symbol)
@@ -85,10 +92,11 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
   const [subIndicators, setSubIndicators] = createSignal({})
 
   const [timezoneModalVisible, setTimezoneModalVisible] = createSignal(false)
-  const [timezone, setTimezone] = createSignal<SelectDataSourceItem>({ key: props.timezone, text: translateTimezone(props.timezone, props.locale) })
+  const defaultTz = props.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
+  const [timezone, setTimezone] = createSignal<SelectDataSourceItem>({ key: defaultTz, text: translateTimezone(defaultTz, props.locale) })
 
   const [settingModalVisible, setSettingModalVisible] = createSignal(false)
-  const [widgetDefaultStyles, setWidgetDefaultStyles] = createSignal<Styles>()
+  const [widgetDefaultStyles, setWidgetDefaultStyles] = createSignal<any>()
 
   const [screenshotUrl, setScreenshotUrl] = createSignal('')
 
@@ -105,11 +113,18 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
   props.ref({
     setTheme,
     getTheme: () => theme(),
-    setStyles,
+    setStyles: (s: DeepPartial<Styles>) => {
+      widget?.setStyles(s)
+      if (widget) {
+        const newStyles = lodashClone(styles())
+        lodashMerge(newStyles, s)
+        setStyles(newStyles)
+      }
+    },
     getStyles: () => widget!.getStyles(),
     setLocale,
     getLocale: () => locale(),
-    setTimezone: (timezone: string) => { setTimezone({ key: timezone, text: translateTimezone(props.timezone, locale()) }) },
+    setTimezone: (timezone: string) => { setTimezone({ key: timezone, text: translateTimezone(timezone, locale()) }) },
     getTimezone: () => timezone().key,
     setSymbol,
     getSymbol: () => symbol(),
@@ -151,7 +166,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         to = to - dif * 60 * 60 * 24
         const newDate = new Date(to)
         to = new Date(`${newDate.getFullYear()}-${newDate.getMonth() + 1}-${newDate.getDate()}`).getTime()
-        from = count * period.multiplier * 7 * 24 * 60 * 60 * 1000
+        from = to - count * period.multiplier * 7 * 24 * 60 * 60 * 1000
         break
       }
       case 'month': {
@@ -159,7 +174,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         const year = date.getFullYear()
         const month = date.getMonth() + 1
         to = new Date(`${year}-${month}-01`).getTime()
-        from = count * period.multiplier * 30 * 24 * 60 * 60 * 1000
+        from = to - count * period.multiplier * 30 * 24 * 60 * 60 * 1000
         const fromDate = new Date(from)
         from = new Date(`${fromDate.getFullYear()}-${fromDate.getMonth() + 1}-01`).getTime()
         break
@@ -168,13 +183,21 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         const date = new Date(to)
         const year = date.getFullYear()
         to = new Date(`${year}-01-01`).getTime()
-        from = count * period.multiplier * 365 * 24 * 60 * 60 * 1000
+        from = to - count * period.multiplier * 365 * 24 * 60 * 60 * 1000
         const fromDate = new Date(from)
         from = new Date(`${fromDate.getFullYear()}-01-01`).getTime()
         break
       }
     }
     return [from, to]
+  }
+
+  const isRegularSession = (timestamp: number) => {
+    const nyTime = dayjs(timestamp).tz('America/New_York')
+    const hour = nyTime.hour()
+    const minute = nyTime.minute()
+    const totalMinutes = hour * 60 + minute
+    return totalMinutes >= 9 * 60 + 30 && totalMinutes < 16 * 60
   }
 
   onMount(() => {
@@ -260,14 +283,18 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
     })
     setSubIndicators(subIndicatorMap)
     widget?.loadMore(timestamp => {
-      loading = true
+      setLoading(true)
       const get = async () => {
         const p = period()
         const [to] = adjustFromTo(p, timestamp!, 1)
         const [from] = adjustFromTo(p, to, 500)
         const kLineDataList = await props.datafeed.getHistoryKLineData(symbol(), p, from, to)
-        widget?.applyMoreData(kLineDataList, kLineDataList.length > 0)
-        loading = false
+        const showExtended = !!utils.formatValue(styles(), 'candle.extendedHours.show')
+        const filteredData = (showExtended || (p.timespan !== 'minute' && p.timespan !== 'hour'))
+          ? kLineDataList
+          : kLineDataList.filter(d => isRegularSession(d.timestamp))
+        widget?.applyMoreData(filteredData, kLineDataList.length > 0)
+        setLoading(false)
       }
       get()
     })
@@ -332,28 +359,39 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
   })
 
   createEffect((prev?: PrevSymbolPeriod) => {
-    if (!loading) {
-      if (prev) {
-        props.datafeed.unsubscribe(prev.symbol, prev.period)
-      }
-      const s = symbol()
-      const p = period()
-      loading = true
-      setLoadingVisible(true)
-      const get = async () => {
-        const [from, to] = adjustFromTo(p, new Date().getTime(), 500)
-        const kLineDataList = await props.datafeed.getHistoryKLineData(s, p, from, to)
-        widget?.applyNewData(kLineDataList, kLineDataList.length > 0)
-        props.datafeed.subscribe(s, p, data => {
-          widget?.updateData(data)
-        })
-        loading = false
-        setLoadingVisible(false)
-      }
-      get()
-      return { symbol: s, period: p }
+    const s = symbol()
+    const p = period()
+    const isFetching = loading()
+    if (isFetching) {
+      return prev
     }
-    return prev
+    if (prev && prev.symbol.ticker === s.ticker && prev.period.text === p.text) {
+      return prev
+    }
+    if (prev) {
+      props.datafeed.unsubscribe(prev.symbol, prev.period)
+    }
+    setLoading(true)
+    setLoadingVisible(true)
+    const get = async () => {
+      const [from, to] = adjustFromTo(p, new Date().getTime(), 500)
+      const kLineDataList = await props.datafeed.getHistoryKLineData(s, p, from, to)
+      const showExtended = !!utils.formatValue(styles(), 'candle.extendedHours.show')
+      const filteredData = (showExtended || (p.timespan !== 'minute' && p.timespan !== 'hour'))
+        ? kLineDataList
+        : kLineDataList.filter(d => isRegularSession(d.timestamp))
+      widget?.applyNewData(filteredData, kLineDataList.length > 0)
+      props.datafeed.subscribe(s, p, data => {
+        const showExtended = !!utils.formatValue(styles(), 'candle.extendedHours.show')
+        if (showExtended || (p.timespan !== 'minute' && p.timespan !== 'hour') || isRegularSession(data.timestamp)) {
+          widget?.updateData(data)
+        }
+      })
+      setLoading(false)
+      setLoadingVisible(false)
+    }
+    get()
+    return { symbol: s, period: p }
   })
 
   createEffect(() => {
@@ -444,6 +482,13 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         }
       }
     })
+    if (widget) {
+      const themeStyles = widget.getStyles()
+      setWidgetDefaultStyles(lodashClone(themeStyles))
+      const newStyles = lodashClone(untrack(() => styles()))
+      lodashMerge(newStyles, themeStyles)
+      setStyles(newStyles)
+    }
   })
 
   createEffect(() => {
@@ -455,9 +500,43 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
   })
 
   createEffect(() => {
+    const s = styles()
+    const p = period()
+    if (s && widget) {
+      const showHighlight = !!utils.formatValue(s, 'candle.extendedHours.show') && (p.timespan === 'minute' || p.timespan === 'hour')
+
+      if (showHighlight) {
+        const extendData = {
+          // @ts-ignore
+          getDataList: () => widget!.getDataList()
+        }
+        if (widget.getOverlayById('extendedHoursHighlight')) {
+          widget.overrideOverlay({
+            id: 'extendedHoursHighlight',
+            // @ts-ignore
+            zLevel: -1,
+            extendData
+          })
+        } else {
+          widget.createOverlay({
+            name: 'extendedHoursHighlight',
+            id: 'extendedHoursHighlight',
+            groupId: 'extendedHoursHighlight',
+            lock: true,
+            // @ts-ignore
+            zLevel: -1,
+            extendData
+          })
+        }
+      } else {
+        widget.removeOverlay({ id: 'extendedHoursHighlight' })
+      }
+    }
+  })
+
+  createEffect(() => {
     if (styles()) {
       widget?.setStyles(styles())
-      setWidgetDefaultStyles(lodashClone(widget!.getStyles()))
     }
   })
 
@@ -517,10 +596,13 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       <Show when={settingModalVisible()}>
         <SettingModal
           locale={props.locale}
-          currentStyles={utils.clone(widget!.getStyles())}
+          currentStyles={styles() as any}
           onClose={() => { setSettingModalVisible(false) }}
           onChange={style => {
             widget?.setStyles(style)
+            const newStyles = lodashClone(styles())
+            lodashMerge(newStyles, style)
+            setStyles(newStyles)
           }}
           onRestoreDefault={(options: SelectDataSourceItem[]) => {
             const style = {}
@@ -529,6 +611,9 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
               lodashSet(style, key, utils.formatValue(widgetDefaultStyles(), key))
             })
             widget?.setStyles(style)
+            const newStyles = lodashClone(styles())
+            lodashMerge(newStyles, style)
+            setStyles(newStyles)
           }}
         />
       </Show>

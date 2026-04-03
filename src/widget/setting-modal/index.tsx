@@ -12,12 +12,12 @@
  * limitations under the License.
  */
 
-import { Component, createEffect, For, createSignal } from 'solid-js'
+import { Component, createEffect, For, createSignal, Show } from 'solid-js'
 import { Styles, utils, DeepPartial } from 'klinecharts'
 
 import lodashSet from 'lodash/set'
 
-import { Modal, Select, Switch } from '../../component'
+import { Modal, Select, Switch, Color } from '../../component'
 import type { SelectDataSourceItem } from '../../component'
 
 import i18n from '../../i18n'
@@ -67,7 +67,8 @@ const SettingModal: Component<SettingModalProps> = props => {
         class="klinecharts-pro-setting-modal-content">
         <For each={options()}>
           {
-            option => {
+            (option, index) => {
+              const showGroup = () => index() === 0 || options()[index() - 1].group !== option.group
               let component
               const value = utils.formatValue(styles(), option.key)
               switch (option.component) {
@@ -96,11 +97,26 @@ const SettingModal: Component<SettingModalProps> = props => {
                   )
                   break
                 }
+                case 'color': {
+                  component = (
+                    <Color
+                      value={value as string}
+                      onChange={(newValue) => {
+                        update(option, newValue)
+                      }}/>
+                  )
+                  break
+                }
               }
               return (
                 <>
-                  <span>{option.text}</span>
-                  {component}
+                  <Show when={showGroup()}>
+                    <div class="group-title">{option.group}</div>
+                  </Show>
+                  <div class="item">
+                    <span>{option.text}</span>
+                    {component}
+                  </div>
                 </>
               )
             }

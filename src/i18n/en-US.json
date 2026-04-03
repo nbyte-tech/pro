@@ -8,6 +8,9 @@
   "full_screen": "Full Screen",
   "exit_full_screen": "Exit",
   "save": "Save",
+  "candle": "Candle",
+  "axis": "Axis",
+  "grid": "Grid",
   "confirm": "Confirm",
   "cancel": "Cancel",
   "ma": "MA (Moving Average)",
@@ -115,6 +118,7 @@
   "log": "Log",
   "reverse_coordinate": "Reverse Coordinate",
   "grid_show": "Show Grids",
+  "extended_hours": "Extended Hours",
   "restore_default": "Restore",
   "remove_selected": "Remove Selected"
 }

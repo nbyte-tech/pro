@@ -19,6 +19,7 @@ export function getOptions (locale: string) {
     {
       key: 'candle.type',
       text: i18n('candle_type', locale),
+      group: i18n('candle', locale),
       component: 'select',
       dataSource: [
         { key: 'candle_solid', text: i18n('candle_solid', locale) },
@@ -32,26 +33,31 @@ export function getOptions (locale: string) {
     {
       key: 'candle.priceMark.last.show',
       text: i18n('last_price_show', locale),
+      group: i18n('candle', locale),
       component: 'switch'
     },
     {
       key: 'candle.priceMark.high.show',
       text: i18n('high_price_show', locale),
+      group: i18n('candle', locale),
       component: 'switch'
     },
     {
       key: 'candle.priceMark.low.show',
       text: i18n('low_price_show', locale),
+      group: i18n('candle', locale),
       component: 'switch'
     },
     {
       key: 'indicator.lastValueMark.show',
       text: i18n('indicator_last_value_show', locale),
+      group: i18n('indicator', locale),
       component: 'switch'
     },
     {
       key: 'yAxis.type',
       text: i18n('price_axis_type', locale),
+      group: i18n('axis', locale),
       component: 'select',
       dataSource: [
         { key: 'normal', text: i18n('normal', locale) },
@@ -62,12 +68,20 @@ export function getOptions (locale: string) {
     {
       key: 'yAxis.reverse',
       text: i18n('reverse_coordinate', locale),
+      group: i18n('axis', locale),
       component: 'switch',
     },
     {
       key: 'grid.show',
       text: i18n('grid_show', locale),
+      group: i18n('grid', locale),
       component: 'switch',
+    },
+    {
+      key: 'candle.extendedHours.show',
+      text: i18n('extended_hours', locale),
+      group: i18n('extended_hours', locale),
+      component: 'switch'
     }
   ]
 }

@@ -2,9 +2,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
-
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
-
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -12,18 +12,28 @@
  * limitations under the License.
  */
 
-import Button from './button'
-import Checkbox from './checkbox'
-import List from './list'
-import Modal from './modal'
-import Select, { SelectDataSourceItem } from './select'
-import Input from './input'
-import Loading from './loading'
-import Switch from './switch'
-import Color from './color'
+import { Component, JSX } from 'solid-js'
 
-export {
-  Button, Checkbox, List, Modal, Select, Input, Loading, Switch, Color
+export interface ColorProps {
+  style?: JSX.CSSProperties | string
+  value: string
+  onChange: (value: string) => void
 }
 
-export type { SelectDataSourceItem }
+const Color: Component<ColorProps> = props => {
+  return (
+    <div
+      class="klinecharts-pro-color"
+      style={props.style}>
+      <input
+        type="color"
+        value={props.value}
+        onInput={(e) => {
+          props.onChange(e.currentTarget.value)
+        }}/>
+      <span>{props.value.toUpperCase()}</span>
+    </div>
+  )
+}
+
+export default Color
