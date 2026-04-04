@@ -16,7 +16,7 @@ import { createSignal, createEffect, onMount, Show, onCleanup, startTransition, 
 import { render } from 'solid-js/web'
 
 import {
-  init, dispose, utils, Nullable, Chart, OverlayMode, Styles, DeepPartial,
+  init, dispose, utils, Nullable, Chart, Overlay, OverlayMode, Styles, DeepPartial,
   TooltipIconPosition, ActionType, PaneOptions, Indicator, DomPosition, FormatDateType,
   IndicatorFigure
 } from 'klinecharts'
@@ -36,7 +36,8 @@ import { SelectDataSourceItem, Loading } from './component'
 
 import {
   PeriodBar, DrawingBar, IndicatorModal, SettingModal,
-  ScreenshotModal, IndicatorSettingModal, SymbolSearchModal
+  ScreenshotModal, IndicatorSettingModal, SymbolSearchModal,
+  DrawingToolbar
 } from './widget'
 
 import { translateTimezone } from './widget/setting-modal/data'
@@ -47,6 +48,14 @@ import { SymbolInfo, Period, ChartProOptions, ChartPro, ChartConfig, IndicatorCo
 export interface ChartProComponentProps extends Required<Omit<ChartProOptions, 'container' | 'onConfigChange'>> {
   ref: (chart: ChartPro) => void
   onConfigChange?: (config: ChartConfig) => void
+}
+
+interface IndicatorSettingModalParams {
+  visible: boolean
+  indicatorName: string
+  paneId: string
+  calcParams: any[]
+  styles: any
 }
 
 interface PrevSymbolPeriod {
@@ -66,6 +75,7 @@ function createIndicator (widget: Nullable<Chart>, indicator: string | Indicator
   return widget?.createIndicator({
     name: indicatorName,
     calcParams: (calcParams && (calcParams.length > 0 || indicatorName === 'VOL')) ? calcParams : undefined,
+    styles: typeof indicator !== 'string' ? indicator.styles : undefined,
     regenerateFigures: (indicatorName === 'VOL') ? (calcParams: any[]) => {
       return [
         {
@@ -229,11 +239,16 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       main.forEach(item => {
         const name = typeof item === 'string' ? item : item.name
         const params = typeof item === 'string' ? undefined : item.calcParams
+        const styles = typeof item === 'string' ? undefined : item.styles
         const existing = w.getIndicatorByPaneId('candle_pane', name) as Indicator
         if (!existing) {
           createIndicator(w, item, true, { id: 'candle_pane' })
-        } else if (params && JSON.stringify(existing.calcParams) !== JSON.stringify(params)) {
-          w.overrideIndicator({ name, calcParams: params }, 'candle_pane')
+        } else {
+          const paramsSame = !params || JSON.stringify(existing.calcParams) === JSON.stringify(params)
+          const stylesSame = !styles || JSON.stringify(existing.styles) === JSON.stringify(styles)
+          if (!paramsSame || !stylesSame) {
+            w.overrideIndicator({ name, calcParams: params, styles }, 'candle_pane')
+          }
         }
       })
       
@@ -242,6 +257,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       subs.forEach(item => {
         const name = typeof item === 'string' ? item : item.name
         const params = typeof item === 'string' ? undefined : item.calcParams
+        const styles = typeof item === 'string' ? undefined : item.styles
         
         // Find if it exists in any non-candle pane
         let existingPaneId: string | undefined = undefined
@@ -257,14 +273,47 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
           if (paneId) {
             // @ts-ignore
             w.setPaneYAxisWheelListener?.(paneId)
-            const newSubIndicators = [...subIndicators(), { name, paneId }]
+            const newSubIndicators = [...subIndicators(), { name, paneId, calcParams: params, styles }]
             untrack(() => setSubIndicators(newSubIndicators))
           }
-        } else if (params) {
+        } else {
           const existing = w.getIndicatorByPaneId(existingPaneId, name) as Indicator
-          if (JSON.stringify(existing.calcParams) !== JSON.stringify(params)) {
-            w.overrideIndicator({ name, calcParams: params }, existingPaneId)
+          const paramsSame = !params || JSON.stringify(existing.calcParams) === JSON.stringify(params)
+          const stylesSame = !styles || JSON.stringify(existing.styles) === JSON.stringify(styles)
+          if (!paramsSame || !stylesSame) {
+            w.overrideIndicator({ name, calcParams: params, styles }, existingPaneId)
           }
+        }
+      })
+
+      // Reconcile overlays
+      const overlays = props.overlays || []
+      overlays.forEach(o => {
+        const existing = w.getOverlayById(o.id!)
+        if (!existing) {
+          w.createOverlay({
+            ...o,
+            onSelected: (e) => {
+              setSelectedOverlay(e.overlay)
+              return true
+            },
+            onDeselected: (e) => {
+              setSelectedOverlay(null)
+              return true
+            },
+            onPressedMoveEnd: (e) => {
+              setOverlayUpdateCount(overlayUpdateCount() + 1)
+              return true
+            },
+            onDrawEnd: (e) => {
+              setOverlayUpdateCount(overlayUpdateCount() + 1)
+              return true
+            },
+            onRemoved: (e) => {
+              setOverlayUpdateCount(overlayUpdateCount() + 1)
+              return true
+            }
+          })
         }
       })
     }
@@ -288,11 +337,14 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
 
   const [loadingVisible, setLoadingVisible] = createSignal(false)
 
-  const [indicatorSettingModalParams, setIndicatorSettingModalParams] = createSignal({
-    visible: false, indicatorName: '', paneId: '', calcParams: [] as Array<any>
+  const [selectedOverlay, setSelectedOverlay] = createSignal<Nullable<Overlay>>(null)
+
+  const [indicatorSettingModalParams, setIndicatorSettingModalParams] = createSignal<IndicatorSettingModalParams>({
+    visible: false, indicatorName: '', paneId: '', calcParams: [], styles: {}
   })
 
   const [indicatorUpdateCount, setIndicatorUpdateCount] = createSignal(0)
+  const [overlayUpdateCount, setOverlayUpdateCount] = createSignal(0)
 
   createEffect(() => {
     if (!widget()) return
@@ -303,17 +355,21 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       mainIndicators: mainIndicators().map(i => {
         const name = typeof i === 'string' ? i : i.name
         const indicator = widget()?.getIndicatorByPaneId('candle_pane', name) as Indicator
-        return { name, calcParams: indicator?.calcParams }
+        return { name, calcParams: indicator?.calcParams, styles: indicator?.styles }
       }),
       subIndicators: subIndicators().map(item => {
         const indicator = widget()?.getIndicatorByPaneId(item.paneId, item.name) as Indicator
-        return { name: item.name, calcParams: indicator?.calcParams }
+        return { name: item.name, calcParams: indicator?.calcParams, styles: indicator?.styles }
       }),
+      overlays: (widget() as any)?._chartStore.getOverlayStore().getInstances().map((i: any) => ({
+        name: i.name, id: i.id, points: i.points, styles: i.styles, lock: i.lock, visible: i.visible, mode: i.mode, extendData: i.extendData
+      })) || [],
       styles: lodashMerge({}, widgetDefaultStyles(), styles()),
       theme: theme(),
       locale: locale()
     }
     indicatorUpdateCount()
+    overlayUpdateCount()
     untrack(() => {
       props.onConfigChange?.(config as any)
     })
@@ -355,13 +411,15 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         mainIndicators: mainIndicators().map(i => {
           const name = typeof i === 'string' ? i : i.name
           const indicator = widget()?.getIndicatorByPaneId('candle_pane', name) as Indicator
-          return { name, calcParams: indicator?.calcParams }
+          return { name, calcParams: indicator?.calcParams, styles: indicator?.styles }
         }),
-        subIndicators: Object.keys(subIndicators()).map(name => {
-          const paneId = (subIndicators() as any)[name]
-          const indicator = widget()?.getIndicatorByPaneId(paneId, name) as Indicator
-          return { name, calcParams: indicator?.calcParams }
+        subIndicators: subIndicators().map(item => {
+          const indicator = widget()?.getIndicatorByPaneId(item.paneId, item.name) as Indicator
+          return { name: item.name, calcParams: indicator?.calcParams, styles: indicator?.styles }
         }),
+        overlays: (widget() as any)?._chartStore.getOverlayStore().getInstances().map((i: any) => ({
+          name: i.name, id: i.id, points: i.points, styles: i.styles, lock: i.lock, visible: i.visible, mode: i.mode, extendData: i.extendData
+        })) || [],
         styles: lodashMerge({}, widgetDefaultStyles(), styles()),
         theme: theme(),
         locale: locale()
@@ -670,7 +728,11 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
             case 'setting': {
               const indicator = initializedWidget.getIndicatorByPaneId(data.paneId, data.indicatorName) as Indicator
               setIndicatorSettingModalParams({
-                visible: true, indicatorName: data.indicatorName, paneId: data.paneId, calcParams: indicator.calcParams
+                visible: true,
+                indicatorName: data.indicatorName,
+                paneId: data.paneId,
+                calcParams: utils.clone(indicator.calcParams),
+                styles: utils.clone(indicator.styles)
               })
               break
             }
@@ -908,26 +970,112 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         <IndicatorSettingModal
           locale={props.locale}
           params={indicatorSettingModalParams()}
-          onClose={() => { setIndicatorSettingModalParams({ visible: false, indicatorName: '', paneId: '', calcParams: [] }) }}
-          onConfirm={(params)=> {
+          defaultStyles={widgetDefaultStyles().indicator}
+          onClose={() => {
             const modalParams = indicatorSettingModalParams()
-            widget()?.overrideIndicator({ name: modalParams.indicatorName, calcParams: params }, modalParams.paneId)
+            if (modalParams.visible) {
+              widget()?.overrideIndicator({
+                name: modalParams.indicatorName,
+                calcParams: modalParams.calcParams,
+                styles: modalParams.styles
+              }, modalParams.paneId)
+            }
+            setIndicatorSettingModalParams({ visible: false, indicatorName: '', paneId: '', calcParams: [], styles: {} })
+          }}
+          onChange={({ calcParams, styles }) => {
+            const modalParams = indicatorSettingModalParams()
+            widget()?.overrideIndicator({ name: modalParams.indicatorName, calcParams, styles }, modalParams.paneId)
+          }}
+          onConfirm={({ calcParams, styles })=> {
+            const modalParams = indicatorSettingModalParams()
+            widget()?.overrideIndicator({ name: modalParams.indicatorName, calcParams, styles }, modalParams.paneId)
             
             // Sync internal signals to ensure configs are remembered in state
             if (modalParams.paneId === 'candle_pane') {
               const newMainIndicators = mainIndicators().map(i => {
                 const name = typeof i === 'string' ? i : i.name
                 if (name === modalParams.indicatorName) {
-                  return { name, calcParams: params }
+                  return { name, calcParams, styles }
                 }
                 return i
               })
               setMainIndicators(newMainIndicators)
             } else {
-              setSubIndicators([...subIndicators()])
+              const newSubIndicators = subIndicators().map(i => {
+                if (i.paneId === modalParams.paneId && i.name === modalParams.indicatorName) {
+                  return { ...i, calcParams, styles }
+                }
+                return i
+              })
+              setSubIndicators(newSubIndicators)
             }
             setIndicatorUpdateCount(indicatorUpdateCount() + 1)
+            setIndicatorSettingModalParams({ visible: false, indicatorName: '', paneId: '', calcParams: [], styles: {} })
           }}
+        />
+      </Show>
+      <Show when={selectedOverlay()}>
+        <DrawingToolbar
+          locale={props.locale}
+          overlay={selectedOverlay()!}
+          onColorChange={color => {
+            const overlay = selectedOverlay()!
+            const styles = lodashClone(overlay.styles || {})
+            lodashSet(styles, 'line.color', color)
+            lodashSet(styles, 'polygon.borderColor', color)
+            lodashSet(styles, 'circle.borderColor', color)
+            lodashSet(styles, 'rect.borderColor', color)
+            lodashSet(styles, 'text.color', color)
+            lodashSet(styles, 'arc.color', color)
+            lodashSet(styles, 'rectText.color', color)
+            lodashSet(styles, 'rectText.borderColor', color)
+            widget()?.overrideOverlay({ id: overlay.id, styles })
+            setSelectedOverlay({ ...overlay, styles })
+            setOverlayUpdateCount(overlayUpdateCount() + 1)
+          }}
+          onSizeChange={size => {
+            const overlay = selectedOverlay()!
+            const styles = lodashClone(overlay.styles || {})
+            lodashSet(styles, 'line.size', size)
+            lodashSet(styles, 'polygon.borderSize', size)
+            lodashSet(styles, 'circle.borderSize', size)
+            lodashSet(styles, 'rect.borderSize', size)
+            lodashSet(styles, 'arc.size', size)
+            widget()?.overrideOverlay({ id: overlay.id, styles })
+            setSelectedOverlay({ ...overlay, styles })
+            setOverlayUpdateCount(overlayUpdateCount() + 1)
+          }}
+          onTypeChange={style => {
+            const overlay = selectedOverlay()!
+            const styles = lodashClone(overlay.styles || {})
+            lodashSet(styles, 'line.style', style)
+            lodashSet(styles, 'polygon.borderStyle', style)
+            lodashSet(styles, 'circle.borderStyle', style)
+            lodashSet(styles, 'rect.borderStyle', style)
+            lodashSet(styles, 'arc.style', style)
+            widget()?.overrideOverlay({ id: overlay.id, styles })
+            setSelectedOverlay({ ...overlay, styles })
+            setOverlayUpdateCount(overlayUpdateCount() + 1)
+          }}
+          onLockChange={lock => {
+            const overlay = selectedOverlay()!
+            widget()?.overrideOverlay({ id: overlay.id, lock })
+            setSelectedOverlay({ ...overlay, lock })
+            setOverlayUpdateCount(overlayUpdateCount() + 1)
+          }}
+          onVisibleChange={visible => {
+            const overlay = selectedOverlay()!
+            widget()?.overrideOverlay({ id: overlay.id, visible })
+            setSelectedOverlay({ ...overlay, visible })
+            setOverlayUpdateCount(overlayUpdateCount() + 1)
+          }}
+          onRemoveClick={() => {
+            const overlay = selectedOverlay()!
+            widget()?.removeOverlay(overlay.id)
+            setSelectedOverlay(null)
+            setOverlayUpdateCount(overlayUpdateCount() + 1)
+          }}
+          onClose={() => { setSelectedOverlay(null) }}
         />
       </Show>
       <PeriodBar
@@ -961,7 +1109,31 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         <Show when={drawingBarVisible()}>
           <DrawingBar
             locale={props.locale}
-            onDrawingItemClick={overlay => { widget()?.createOverlay(overlay) }}
+            onDrawingItemClick={overlay => {
+              widget()?.createOverlay({
+                ...overlay,
+                onSelected: (e) => {
+                  setSelectedOverlay(e.overlay)
+                  return true
+                },
+                onDeselected: (e) => {
+                  setSelectedOverlay(null)
+                  return true
+                },
+                onPressedMoveEnd: (e) => {
+                  setOverlayUpdateCount(overlayUpdateCount() + 1)
+                  return true
+                },
+                onDrawEnd: (e) => {
+                  setOverlayUpdateCount(overlayUpdateCount() + 1)
+                  return true
+                },
+                onRemoved: (e) => {
+                  setOverlayUpdateCount(overlayUpdateCount() + 1)
+                  return true
+                }
+              })
+            }}
             onModeChange={mode => { widget()?.overrideOverlay({ mode: mode as OverlayMode }) }}
             onLockChange={lock => { widget()?.overrideOverlay({ lock }) }}
             onVisibleChange={visible => { widget()?.overrideOverlay({ visible }) }}

@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   padding: 10px 0;
-  max-height: 480px;
+  height: 400px;
   overflow-x: hidden;
   overflow-y: auto;
 
@@ -17,6 +17,43 @@
   &::-webkit-scrollbar-thumb {
     background: var(--klinecharts-pro-border-color);
     border-radius: 5px;
+  }
+
+  .tabs {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--klinecharts-pro-border-color);
+    padding: 0 10px;
+
+    span {
+      padding: 8px 16px;
+      font-size: 14px;
+      color: var(--klinecharts-pro-text-color);
+      cursor: pointer;
+      position: relative;
+      transition: color 0.2s;
+
+      &:hover {
+        color: var(--klinecharts-pro-primary-color);
+      }
+
+      &.active {
+        color: var(--klinecharts-pro-primary-color);
+        font-weight: 500;
+
+        &::after {
+          content: "";
+          position: absolute;
+          bottom: -1px;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background-color: var(--klinecharts-pro-primary-color);
+        }
+      }
+    }
   }
 
   .item {

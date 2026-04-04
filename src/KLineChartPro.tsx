@@ -72,6 +72,7 @@ export default class KLineChartPro implements ChartPro {
           timezone={options.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone}
           mainIndicators={options.mainIndicators ?? ['MA']}
           subIndicators={options.subIndicators ?? ['VOL']}
+          overlays={options.overlays ?? []}
           datafeed={options.datafeed}
           onConfigChange={options.onConfigChange}/>
       ),

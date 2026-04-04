@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import { KLineData, Styles, DeepPartial } from 'klinecharts'
+import { KLineData, Styles, DeepPartial, OverlayMode } from 'klinecharts'
 
 export interface SymbolInfo {
   ticker: string
@@ -56,6 +56,7 @@ export interface ChartProOptions {
   timezone?: string
   mainIndicators?: (string | IndicatorConfig)[]
   subIndicators?: (string | IndicatorConfig)[]
+  overlays?: OverlayConfig[]
   datafeed: Datafeed
   onConfigChange?: (config: ChartConfig) => void
 }
@@ -63,6 +64,18 @@ export interface ChartProOptions {
 export interface IndicatorConfig {
   name: string
   calcParams?: any[]
+  styles?: any
+}
+
+export interface OverlayConfig {
+  name: string
+  id?: string
+  points?: any[]
+  styles?: any
+  lock?: boolean
+  visible?: boolean
+  mode?: OverlayMode
+  extendData?: any
 }
 
 export interface ChartConfig {
@@ -71,6 +84,7 @@ export interface ChartConfig {
   timezone: string
   mainIndicators: (string | IndicatorConfig)[]
   subIndicators: (string | IndicatorConfig)[]
+  overlays?: OverlayConfig[]
   styles: DeepPartial<Styles>
   theme: string
   locale: string

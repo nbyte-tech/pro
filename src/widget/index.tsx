@@ -19,9 +19,11 @@ import SettingModal from './setting-modal'
 import ScreenshotModal from './screenshot-modal'
 import IndicatorSettingModal from './indicator-setting-modal'
 import SymbolSearchModal from './symbol-search-modal'
+import DrawingToolbar from './drawing-toolbar'
 
 export {
   PeriodBar, DrawingBar, IndicatorModal,
   SettingModal, ScreenshotModal,
-  IndicatorSettingModal, SymbolSearchModal
+  IndicatorSettingModal, SymbolSearchModal,
+  DrawingToolbar
 }
