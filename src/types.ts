@@ -57,6 +57,7 @@ export interface ChartProOptions {
   mainIndicators?: (string | IndicatorConfig)[]
   subIndicators?: (string | IndicatorConfig)[]
   overlays?: OverlayConfig[]
+  lastOverlayStyles?: Record<string, any>
   datafeed: Datafeed
   onConfigChange?: (config: ChartConfig) => void
 }
@@ -85,6 +86,7 @@ export interface ChartConfig {
   mainIndicators: (string | IndicatorConfig)[]
   subIndicators: (string | IndicatorConfig)[]
   overlays?: OverlayConfig[]
+  lastOverlayStyles?: Record<string, any>
   styles: DeepPartial<Styles>
   theme: string
   locale: string

@@ -316,6 +316,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
   const [loadingVisible, setLoadingVisible] = createSignal(false)
 
   const [selectedOverlay, setSelectedOverlay] = createSignal<Nullable<Overlay>>(null)
+  const [lastOverlayStyles, setLastOverlayStyles] = createSignal<Record<string, any>>(props.lastOverlayStyles ?? {})
 
   const [indicatorSettingModalParams, setIndicatorSettingModalParams] = createSignal<IndicatorSettingModalParams>({
     visible: false, indicatorName: '', paneId: '', calcParams: [], styles: {}
@@ -325,8 +326,11 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
   const [overlayUpdateCount, setOverlayUpdateCount] = createSignal(0)
 
   const createOverlay = (overlay: OverlayCreate) => {
+    const name = typeof overlay === 'string' ? overlay : overlay.name
+    const styles = lastOverlayStyles()[name]
     widget()?.createOverlay({
       ...overlay,
+      styles: lodashMerge({}, styles, overlay.styles),
       onSelected: (e) => {
         setSelectedOverlay(e.overlay)
         return true
@@ -369,6 +373,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       overlays: (widget() as any)?._chartStore.getOverlayStore().getInstances().map((i: any) => ({
         name: i.name, id: i.id, points: i.points, styles: i.styles, lock: i.lock, visible: i.visible, mode: i.mode, extendData: i.extendData
       })) || [],
+      lastOverlayStyles: lastOverlayStyles(),
       styles: lodashMerge({}, widgetDefaultStyles(), styles()),
       theme: theme(),
       locale: locale()
@@ -425,6 +430,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         overlays: (widget() as any)?._chartStore.getOverlayStore().getInstances().map((i: any) => ({
           name: i.name, id: i.id, points: i.points, styles: i.styles, lock: i.lock, visible: i.visible, mode: i.mode, extendData: i.extendData
         })) || [],
+        lastOverlayStyles: lastOverlayStyles(),
         styles: lodashMerge({}, widgetDefaultStyles(), styles()),
         theme: theme(),
         locale: locale()
@@ -1060,6 +1066,9 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
               widget()?.overrideOverlay({ id: overlay.id, styles })
               setSelectedOverlay({ ...overlay, styles })
               setOverlayUpdateCount(overlayUpdateCount() + 1)
+              const lastStyles = lodashClone(lastOverlayStyles())
+              lastStyles[overlay.name] = styles
+              setLastOverlayStyles(lastStyles)
             }}
             onSizeChange={size => {
               const overlay = selectedOverlay()!
@@ -1072,6 +1081,9 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
               widget()?.overrideOverlay({ id: overlay.id, styles })
               setSelectedOverlay({ ...overlay, styles })
               setOverlayUpdateCount(overlayUpdateCount() + 1)
+              const lastStyles = lodashClone(lastOverlayStyles())
+              lastStyles[overlay.name] = styles
+              setLastOverlayStyles(lastStyles)
             }}
             onTypeChange={style => {
               const overlay = selectedOverlay()!
@@ -1084,6 +1096,9 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
               widget()?.overrideOverlay({ id: overlay.id, styles })
               setSelectedOverlay({ ...overlay, styles })
               setOverlayUpdateCount(overlayUpdateCount() + 1)
+              const lastStyles = lodashClone(lastOverlayStyles())
+              lastStyles[overlay.name] = styles
+              setLastOverlayStyles(lastStyles)
             }}
             onLockChange={lock => {
               const overlay = selectedOverlay()!
