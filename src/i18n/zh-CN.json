@@ -123,6 +123,9 @@
   "candle_stroke": "全空心",
   "candle_up_stroke": "涨空心",
   "candle_down_stroke": "跌空心",
+  "up_color": "上涨颜色",
+  "down_color": "下跌颜色",
+  "no_change_color": "平盘颜色",
   "ohlc": "OHLC",
   "area": "面积图",
   

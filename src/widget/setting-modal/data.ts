@@ -86,6 +86,24 @@ export function getOptions (locale: string) {
       ]
     },
     {
+      key: 'candle.bar.upColor',
+      text: i18n('up_color', locale),
+      group: i18n('candle', locale),
+      component: 'color'
+    },
+    {
+      key: 'candle.bar.downColor',
+      text: i18n('down_color', locale),
+      group: i18n('candle', locale),
+      component: 'color'
+    },
+    {
+      key: 'candle.bar.noChangeColor',
+      text: i18n('no_change_color', locale),
+      group: i18n('candle', locale),
+      component: 'color'
+    },
+    {
       key: 'candle.priceMark.last.show',
       text: i18n('last_price_show', locale),
       group: i18n('candle', locale),

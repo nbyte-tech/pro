@@ -84,10 +84,8 @@ function broadcastIndicator (source: any, data: any) {
 }
 
 function broadcastStyles (source: any, styles: DeepPartial<Styles>) {
-  const syncId = source.drawingSyncId()
-  if (!syncId) return
   chartInstances.forEach(inst => {
-    if (inst !== source && inst.drawingSyncId() === syncId) {
+    if (inst !== source) {
       inst.receiveStyles(styles)
     }
   })
@@ -582,7 +580,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       })) || [],
       lastOverlayStyles: lastOverlayStyles(),
       drawingSyncId: drawingSyncId(),
-      styles: lodashMerge({}, widgetDefaultStyles(), styles()),
+      styles: styles(),
       theme: theme(),
       locale: locale()
     }
@@ -650,7 +648,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         })) || [],
         lastOverlayStyles: lastOverlayStyles(),
         drawingSyncId: drawingSyncId(),
-        styles: lodashMerge({}, widgetDefaultStyles(), styles()),
+        styles: styles(),
         theme: theme(),
         locale: locale()
       }
@@ -1207,6 +1205,9 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
             const newStyles = lodashClone(styles())
             lodashMerge(newStyles, style)
             setStyles(newStyles)
+            if (!isSyncingStyles) {
+              broadcastStyles(instance, style)
+            }
           }}
           onRestoreDefault={(options: SelectDataSourceItem[]) => {
             const style = {}
@@ -1218,6 +1219,9 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
             const newStyles = lodashClone(styles())
             lodashMerge(newStyles, style)
             setStyles(newStyles)
+            if (!isSyncingStyles) {
+              broadcastStyles(instance, style)
+            }
           }}
         />
       </Show>
