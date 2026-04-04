@@ -176,5 +176,10 @@ interface IconProps {
   name: string
 }
 
-// @ts-expect-error
-export const Icon: Component<IconProps> = props => mapping[props.name](props.class)
+export const Icon: Component<IconProps> = props => {
+  const component = (mapping as any)[props.name]
+  if (component) {
+    return component(props.class)
+  }
+  return null
+}

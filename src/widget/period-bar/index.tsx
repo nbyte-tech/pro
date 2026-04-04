@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import { Component, Show, createSignal, onMount, onCleanup } from 'solid-js'
+import { Component, Show, createSignal, onMount, onCleanup, JSX } from 'solid-js'
 
 import { SymbolInfo, Period } from '../../types'
 
@@ -32,6 +32,7 @@ export interface PeriodBarProps {
   onPeriodChange: (period: Period) => void
   onIndicatorClick: () => void
   onScreenshotClick: () => void
+  children?: JSX.Element
 }
 
 const PeriodBar: Component<PeriodBarProps> = props => {
@@ -97,6 +98,7 @@ const PeriodBar: Component<PeriodBarProps> = props => {
         </svg>
         <span>{i18n('indicator', props.locale)}</span>
       </div>
+      {props.children}
       <div
         class='item tools screenshot'
         onClick={props.onScreenshotClick}>

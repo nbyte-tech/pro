@@ -18,7 +18,7 @@ import { render } from 'solid-js/web'
 import {
   init, dispose, utils, Nullable, Chart, Overlay, OverlayMode, Styles, DeepPartial,
   TooltipIconPosition, ActionType, PaneOptions, Indicator, DomPosition, FormatDateType,
-  IndicatorFigure
+  IndicatorFigure, OverlayCreate
 } from 'klinecharts'
 
 import lodashSet from 'lodash/set'
@@ -291,29 +291,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       overlays.forEach(o => {
         const existing = w.getOverlayById(o.id!)
         if (!existing) {
-          w.createOverlay({
-            ...o,
-            onSelected: (e) => {
-              setSelectedOverlay(e.overlay)
-              return true
-            },
-            onDeselected: (e) => {
-              setSelectedOverlay(null)
-              return true
-            },
-            onPressedMoveEnd: (e) => {
-              setOverlayUpdateCount(overlayUpdateCount() + 1)
-              return true
-            },
-            onDrawEnd: (e) => {
-              setOverlayUpdateCount(overlayUpdateCount() + 1)
-              return true
-            },
-            onRemoved: (e) => {
-              setOverlayUpdateCount(overlayUpdateCount() + 1)
-              return true
-            }
-          })
+          createOverlay(o as OverlayCreate)
         }
       })
     }
@@ -345,6 +323,33 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
 
   const [indicatorUpdateCount, setIndicatorUpdateCount] = createSignal(0)
   const [overlayUpdateCount, setOverlayUpdateCount] = createSignal(0)
+
+  const createOverlay = (overlay: OverlayCreate) => {
+    widget()?.createOverlay({
+      ...overlay,
+      onSelected: (e) => {
+        setSelectedOverlay(e.overlay)
+        return true
+      },
+      onDeselected: (e) => {
+        setSelectedOverlay(null)
+        return true
+      },
+      onPressedMoveEnd: (e) => {
+        setOverlayUpdateCount(overlayUpdateCount() + 1)
+        return true
+      },
+      onDrawEnd: (e) => {
+        setSelectedOverlay(e.overlay)
+        setOverlayUpdateCount(overlayUpdateCount() + 1)
+        return true
+      },
+      onRemoved: (e) => {
+        setOverlayUpdateCount(overlayUpdateCount() + 1)
+        return true
+      }
+    })
+  }
 
   createEffect(() => {
     if (!widget()) return
@@ -551,7 +556,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
           }
 
           if (overlayName) {
-            widget()?.createOverlay({ name: overlayName, groupId: 'drawing_tools' })
+            createOverlay({ name: overlayName, groupId: 'drawing_tools' })
           }
         }
       }
@@ -1014,70 +1019,6 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
           }}
         />
       </Show>
-      <Show when={selectedOverlay()}>
-        <DrawingToolbar
-          locale={props.locale}
-          overlay={selectedOverlay()!}
-          onColorChange={color => {
-            const overlay = selectedOverlay()!
-            const styles = lodashClone(overlay.styles || {})
-            lodashSet(styles, 'line.color', color)
-            lodashSet(styles, 'polygon.borderColor', color)
-            lodashSet(styles, 'circle.borderColor', color)
-            lodashSet(styles, 'rect.borderColor', color)
-            lodashSet(styles, 'text.color', color)
-            lodashSet(styles, 'arc.color', color)
-            lodashSet(styles, 'rectText.color', color)
-            lodashSet(styles, 'rectText.borderColor', color)
-            widget()?.overrideOverlay({ id: overlay.id, styles })
-            setSelectedOverlay({ ...overlay, styles })
-            setOverlayUpdateCount(overlayUpdateCount() + 1)
-          }}
-          onSizeChange={size => {
-            const overlay = selectedOverlay()!
-            const styles = lodashClone(overlay.styles || {})
-            lodashSet(styles, 'line.size', size)
-            lodashSet(styles, 'polygon.borderSize', size)
-            lodashSet(styles, 'circle.borderSize', size)
-            lodashSet(styles, 'rect.borderSize', size)
-            lodashSet(styles, 'arc.size', size)
-            widget()?.overrideOverlay({ id: overlay.id, styles })
-            setSelectedOverlay({ ...overlay, styles })
-            setOverlayUpdateCount(overlayUpdateCount() + 1)
-          }}
-          onTypeChange={style => {
-            const overlay = selectedOverlay()!
-            const styles = lodashClone(overlay.styles || {})
-            lodashSet(styles, 'line.style', style)
-            lodashSet(styles, 'polygon.borderStyle', style)
-            lodashSet(styles, 'circle.borderStyle', style)
-            lodashSet(styles, 'rect.borderStyle', style)
-            lodashSet(styles, 'arc.style', style)
-            widget()?.overrideOverlay({ id: overlay.id, styles })
-            setSelectedOverlay({ ...overlay, styles })
-            setOverlayUpdateCount(overlayUpdateCount() + 1)
-          }}
-          onLockChange={lock => {
-            const overlay = selectedOverlay()!
-            widget()?.overrideOverlay({ id: overlay.id, lock })
-            setSelectedOverlay({ ...overlay, lock })
-            setOverlayUpdateCount(overlayUpdateCount() + 1)
-          }}
-          onVisibleChange={visible => {
-            const overlay = selectedOverlay()!
-            widget()?.overrideOverlay({ id: overlay.id, visible })
-            setSelectedOverlay({ ...overlay, visible })
-            setOverlayUpdateCount(overlayUpdateCount() + 1)
-          }}
-          onRemoveClick={() => {
-            const overlay = selectedOverlay()!
-            widget()?.removeOverlay(overlay.id)
-            setSelectedOverlay(null)
-            setOverlayUpdateCount(overlayUpdateCount() + 1)
-          }}
-          onClose={() => { setSelectedOverlay(null) }}
-        />
-      </Show>
       <PeriodBar
         locale={props.locale}
         symbol={symbol()}
@@ -1100,7 +1041,72 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
             setScreenshotUrl(url)
           }
         }}
-      />
+      >
+        <Show when={selectedOverlay()}>
+          <DrawingToolbar
+            locale={props.locale}
+            overlay={selectedOverlay()!}
+            onColorChange={color => {
+              const overlay = selectedOverlay()!
+              const styles = lodashClone(overlay.styles || {})
+              lodashSet(styles, 'line.color', color)
+              lodashSet(styles, 'polygon.borderColor', color)
+              lodashSet(styles, 'circle.borderColor', color)
+              lodashSet(styles, 'rect.borderColor', color)
+              lodashSet(styles, 'text.color', color)
+              lodashSet(styles, 'arc.color', color)
+              lodashSet(styles, 'rectText.color', color)
+              lodashSet(styles, 'rectText.borderColor', color)
+              widget()?.overrideOverlay({ id: overlay.id, styles })
+              setSelectedOverlay({ ...overlay, styles })
+              setOverlayUpdateCount(overlayUpdateCount() + 1)
+            }}
+            onSizeChange={size => {
+              const overlay = selectedOverlay()!
+              const styles = lodashClone(overlay.styles || {})
+              lodashSet(styles, 'line.size', size)
+              lodashSet(styles, 'polygon.borderSize', size)
+              lodashSet(styles, 'circle.borderSize', size)
+              lodashSet(styles, 'rect.borderSize', size)
+              lodashSet(styles, 'arc.size', size)
+              widget()?.overrideOverlay({ id: overlay.id, styles })
+              setSelectedOverlay({ ...overlay, styles })
+              setOverlayUpdateCount(overlayUpdateCount() + 1)
+            }}
+            onTypeChange={style => {
+              const overlay = selectedOverlay()!
+              const styles = lodashClone(overlay.styles || {})
+              lodashSet(styles, 'line.style', style)
+              lodashSet(styles, 'polygon.borderStyle', style)
+              lodashSet(styles, 'circle.borderStyle', style)
+              lodashSet(styles, 'rect.borderStyle', style)
+              lodashSet(styles, 'arc.style', style)
+              widget()?.overrideOverlay({ id: overlay.id, styles })
+              setSelectedOverlay({ ...overlay, styles })
+              setOverlayUpdateCount(overlayUpdateCount() + 1)
+            }}
+            onLockChange={lock => {
+              const overlay = selectedOverlay()!
+              widget()?.overrideOverlay({ id: overlay.id, lock })
+              setSelectedOverlay({ ...overlay, lock })
+              setOverlayUpdateCount(overlayUpdateCount() + 1)
+            }}
+            onVisibleChange={visible => {
+              const overlay = selectedOverlay()!
+              widget()?.overrideOverlay({ id: overlay.id, visible })
+              setSelectedOverlay({ ...overlay, visible })
+              setOverlayUpdateCount(overlayUpdateCount() + 1)
+            }}
+            onRemoveClick={() => {
+              const overlay = selectedOverlay()!
+              widget()?.removeOverlay(overlay.id)
+              setSelectedOverlay(null)
+              setOverlayUpdateCount(overlayUpdateCount() + 1)
+            }}
+            onClose={() => { setSelectedOverlay(null) }}
+          />
+        </Show>
+      </PeriodBar>
       <div
         class="klinecharts-pro-content">
         <Show when={loadingVisible()}>
@@ -1110,29 +1116,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
           <DrawingBar
             locale={props.locale}
             onDrawingItemClick={overlay => {
-              widget()?.createOverlay({
-                ...overlay,
-                onSelected: (e) => {
-                  setSelectedOverlay(e.overlay)
-                  return true
-                },
-                onDeselected: (e) => {
-                  setSelectedOverlay(null)
-                  return true
-                },
-                onPressedMoveEnd: (e) => {
-                  setOverlayUpdateCount(overlayUpdateCount() + 1)
-                  return true
-                },
-                onDrawEnd: (e) => {
-                  setOverlayUpdateCount(overlayUpdateCount() + 1)
-                  return true
-                },
-                onRemoved: (e) => {
-                  setOverlayUpdateCount(overlayUpdateCount() + 1)
-                  return true
-                }
-              })
+              createOverlay(overlay)
             }}
             onModeChange={mode => { widget()?.overrideOverlay({ mode: mode as OverlayMode }) }}
             onLockChange={lock => { widget()?.overrideOverlay({ lock }) }}

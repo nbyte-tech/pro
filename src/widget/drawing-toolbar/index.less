@@ -1,38 +1,25 @@
 @import (reference) '../../base.less';
 
 .@{prefix-cls}-drawing-toolbar {
-  position: absolute;
-  top: 10px;
-  right: 10px;
   display: flex;
   flex-direction: row;
   align-items: center;
-  background-color: var(--klinecharts-pro-background-color);
-  border: 1px solid var(--klinecharts-pro-border-color);
-  border-radius: 8px;
-  padding: 4px 8px;
-  z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  gap: 8px;
+  height: 100%;
+  padding: 0 12px;
+  border-right: solid 1px var(--klinecharts-pro-border-color);
+  gap: 4px;
 
-  .handler {
-    cursor: move;
+  .icon {
     display: flex;
     align-items: center;
     color: var(--klinecharts-pro-text-color);
     padding: 0 4px;
+    margin-right: 4px;
     
     svg {
       width: 20px;
       height: 20px;
     }
-  }
-
-  .split-line {
-    width: 1px;
-    height: 16px;
-    background-color: var(--klinecharts-pro-border-color);
-    margin: 0 4px;
   }
 
   .item {
@@ -49,6 +36,7 @@
 
     &:hover {
       background-color: var(--klinecharts-pro-hover-background-color);
+      color: var(--klinecharts-pro-primary-color);
     }
 
     svg {
