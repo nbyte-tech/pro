@@ -125,6 +125,18 @@ export default {
     { paramNameKey: 'period_1', precision: 0, min: 1, default: 26 },
     { paramNameKey: 'period_2', precision: 0, min: 1, default: 6 }
   ],
+  VWAP: [
+    {
+      paramNameKey: 'reset_period',
+      type: 'select',
+      default: 0,
+      dataSource: [
+        { key: '0', text: 'session' },
+        { key: '1', text: 'weekly' },
+        { key: '2', text: 'monthly' }
+      ]
+    }
+  ],
   WR: [
     { paramNameKey: 'period_1', precision: 0, min: 1, styleKey: 'lines[0].color' },
     { paramNameKey: 'period_2', precision: 0, min: 1, styleKey: 'lines[1].color' },

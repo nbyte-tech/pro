@@ -23,8 +23,6 @@ dayjs.extend(timezone)
 const extendedHoursHighlight: OverlayTemplate = {
   name: 'extendedHoursHighlight',
   lock: true,
-  // @ts-ignore
-  zLevel: -1,
   createPointFigures: (params) => {
     const { overlay, bounding, barSpace, xAxis } = params
     if (xAxis === null) {
@@ -80,7 +78,8 @@ const extendedHoursHighlight: OverlayTemplate = {
             },
             styles: {
               color: currentSession === 'pre' ? preMarketColor : afterMarketColor
-            }
+            },
+            ignoreEvent: true
           })
         }
         currentSession = session
@@ -99,7 +98,8 @@ const extendedHoursHighlight: OverlayTemplate = {
           },
           styles: {
             color: currentSession === 'pre' ? preMarketColor : afterMarketColor
-          }
+          },
+          ignoreEvent: true
         })
       }
     })

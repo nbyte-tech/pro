@@ -16,7 +16,7 @@ import { Component, createSignal } from 'solid-js'
 
 import { utils } from 'klinecharts'
 
-import { Modal, Input } from '../../component'
+import { Modal, Input, Select, SelectDataSourceItem } from '../../component'
 
 import i18n from '../../i18n'
 
@@ -66,9 +66,24 @@ const IndicatorSettingModal: Component<IndicatorSettingModalProps> = props => {
       <div class="klinecharts-pro-indicator-setting-modal-content">
         {
           getConfig(props.params.indicatorName).map((d, i) => {
-            return (
-              <div class="item">
-                <span >{i18n(d.paramNameKey, props.locale)}</span>
+            let component
+            if (d.type === 'select') {
+              const selectedItem = d.dataSource.find((item: any) => item.key == calcParams()[i]) || d.dataSource[0]
+              component = (
+                <Select
+                  style={{ width: '200px' }}
+                  value={i18n(selectedItem.text, props.locale)}
+                  dataSource={d.dataSource.map((item: any) => ({ ...item, text: i18n(item.text, props.locale) }))}
+                  onSelected={item => {
+                    const params = utils.clone(calcParams())
+                    const value = typeof item === 'object' ? item.key : item
+                    const num = parseFloat(value as string)
+                    params[i] = isNaN(num) ? value : num
+                    setCalcParams(params)
+                  }}/>
+              )
+            } else {
+              component = (
                 <Input
                   style={{ width: '200px' }}
                   value={calcParams()[i] ?? ''}
@@ -79,6 +94,12 @@ const IndicatorSettingModal: Component<IndicatorSettingModalProps> = props => {
                     params[i] = value
                     setCalcParams(params)
                   }}/>
+              )
+            }
+            return (
+              <div class="item">
+                <span >{i18n(d.paramNameKey, props.locale)}</span>
+                {component}
               </div>
             )
           })

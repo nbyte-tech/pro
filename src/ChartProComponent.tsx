@@ -90,25 +90,105 @@ function createIndicator (widget: Nullable<Chart>, indicator: string | Indicator
     } : undefined,
     // @ts-expect-error
     createTooltipDataSource: ({ indicator, defaultStyles }) => {
-      const icons = []
+      const icons = getIndicatorTooltipIcons(defaultStyles.tooltip.text.color)
+      const res = []
       const showSetting = !!config && config.length > 0
       if (indicator.visible) {
-        icons.push(defaultStyles.tooltip.icons[1])
-        if (showSetting) {
-          icons.push(defaultStyles.tooltip.icons[2])
-        }
-        icons.push(defaultStyles.tooltip.icons[3])
+        res.push(icons[1])
       } else {
-        icons.push(defaultStyles.tooltip.icons[0])
-        if (showSetting) {
-          icons.push(defaultStyles.tooltip.icons[2])
-        }
-        icons.push(defaultStyles.tooltip.icons[3])
+        res.push(icons[0])
       }
-      return { icons }
+      if (showSetting) {
+        res.push(icons[2])
+      }
+      res.push(icons[3])
+      return {
+        name: indicator.shortName,
+        calcParamsText: indicator.calcParams.length > 0 ? `(${indicator.calcParams.join(',')})` : '',
+        icons: res
+      }
     }
   }, isStack, paneOptions) ?? null
 }
+
+const getIndicatorTooltipIcons = (color: string) => [
+  {
+    id: 'visible',
+    position: TooltipIconPosition.Left,
+    marginLeft: 8,
+    marginTop: 7,
+    marginRight: 0,
+    marginBottom: 0,
+    paddingLeft: 0,
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
+    icon: '\ue903',
+    fontFamily: 'icomoon',
+    size: 14,
+    color: color,
+    activeColor: color,
+    backgroundColor: 'transparent',
+    activeBackgroundColor: 'rgba(22, 119, 255, 0.15)'
+  },
+  {
+    id: 'invisible',
+    position: TooltipIconPosition.Left,
+    marginLeft: 8,
+    marginTop: 7,
+    marginRight: 0,
+    marginBottom: 0,
+    paddingLeft: 0,
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
+    icon: '\ue901',
+    fontFamily: 'icomoon',
+    size: 14,
+    color: color,
+    activeColor: color,
+    backgroundColor: 'transparent',
+    activeBackgroundColor: 'rgba(22, 119, 255, 0.15)'
+  },
+  {
+    id: 'setting',
+    position: TooltipIconPosition.Left,
+    marginLeft: 6,
+    marginTop: 7,
+    marginBottom: 0,
+    marginRight: 0,
+    paddingLeft: 0,
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
+    icon: '\ue902',
+    fontFamily: 'icomoon',
+    size: 14,
+    color: color,
+    activeColor: color,
+    backgroundColor: 'transparent',
+    activeBackgroundColor: 'rgba(22, 119, 255, 0.15)'
+  },
+  {
+    id: 'close',
+    position: TooltipIconPosition.Left,
+    marginLeft: 6,
+    marginTop: 7,
+    marginRight: 0,
+    marginBottom: 0,
+    paddingLeft: 0,
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
+    icon: '\ue900',
+    fontFamily: 'icomoon',
+    size: 14,
+    color: color,
+    activeColor: color,
+    backgroundColor: 'transparent',
+    activeBackgroundColor: 'rgba(22, 119, 255, 0.15)'
+  }
+]
 
 const ChartProComponent: Component<ChartProComponentProps> = props => {
   let widgetRef: HTMLDivElement | undefined = undefined
@@ -392,9 +472,21 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         }
       }
     })
-    setWidget(initializedWidget)
 
     if (initializedWidget) {
+      const t = theme()
+      initializedWidget.setStyles(t)
+      const iconColor = t === 'dark' ? '#929AA5' : '#76808F'
+      initializedWidget.setStyles({
+        indicator: {
+          tooltip: {
+            icons: getIndicatorTooltipIcons(iconColor)
+          }
+        }
+      })
+
+      setWidget(initializedWidget)
+
       const watermarkContainer = initializedWidget.getDom('candle_pane', DomPosition.Main)
       if (watermarkContainer) {
         render(() => {
@@ -459,73 +551,85 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
           }
         })
       }
-    }
 
-    mainIndicators().forEach(indicator => {
-      createIndicator(initializedWidget, indicator, true, { id: 'candle_pane' })
-    })
-    const subIndicatorMap: Record<string, string> = {}
-    props.subIndicators!.forEach(indicator => {
-      const paneId = createIndicator(initializedWidget, indicator, true)
-      if (paneId) {
-        const name = typeof indicator === 'string' ? indicator : indicator.name
-        subIndicatorMap[name] = paneId
-      }
-    })
-    setSubIndicators(subIndicatorMap)
-    initializedWidget?.loadMore(timestamp => {
-      setLoading(true)
-      const get = async () => {
-        const p = period()
-        const [to] = adjustFromTo(p, timestamp!, 1)
-        const [from] = adjustFromTo(p, to, 500)
-        const kLineDataList = await props.datafeed.getHistoryKLineData(symbol(), p, from, to)
-        const showExtended = !!utils.formatValue(styles(), 'candle.extendedHours.show')
-        const filteredData = (showExtended || (p.timespan !== 'minute' && p.timespan !== 'hour'))
-          ? kLineDataList
-          : kLineDataList.filter(d => isRegularSession(d.timestamp))
-        initializedWidget?.applyMoreData(filteredData, kLineDataList.length > 0)
-        setLoading(false)
-      }
-      get()
-    })
-    initializedWidget?.subscribeAction(ActionType.OnTooltipIconClick, (data) => {
-      if (data.indicatorName) {
-        switch (data.iconId) {
-          case 'visible': {
-            initializedWidget?.overrideIndicator({ name: data.indicatorName, visible: true }, data.paneId)
-            break
-          }
-          case 'invisible': {
-            initializedWidget?.overrideIndicator({ name: data.indicatorName, visible: false }, data.paneId)
-            break
-          }
-          case 'setting': {
-            const indicator = initializedWidget?.getIndicatorByPaneId(data.paneId, data.indicatorName) as Indicator
-            setIndicatorSettingModalParams({
-              visible: true, indicatorName: data.indicatorName, paneId: data.paneId, calcParams: indicator.calcParams
-            })
-            break
-          }
-          case 'close': {
-            if (data.paneId === 'candle_pane') {
-              const newMainIndicators = [...mainIndicators()]
-              initializedWidget?.removeIndicator('candle_pane', data.indicatorName)
-              const index = newMainIndicators.findIndex(i => (typeof i === 'string' ? i : i.name) === data.indicatorName)
-              if (index > -1) {
-                newMainIndicators.splice(index, 1)
+      mainIndicators().forEach(indicator => {
+        createIndicator(initializedWidget, indicator, true, { id: 'candle_pane' })
+      })
+      const subIndicatorMap: Record<string, string> = {}
+      props.subIndicators!.forEach(indicator => {
+        const paneId = createIndicator(initializedWidget, indicator, true)
+        if (paneId) {
+          const name = typeof indicator === 'string' ? indicator : indicator.name
+          subIndicatorMap[name] = paneId
+        }
+      })
+      setSubIndicators(subIndicatorMap)
+      initializedWidget.loadMore(timestamp => {
+        setLoading(true)
+        const get = async () => {
+          const p = period()
+          const [to] = adjustFromTo(p, timestamp!, 1)
+          const [from] = adjustFromTo(p, to, 500)
+          const kLineDataList = await props.datafeed.getHistoryKLineData(symbol(), p, from, to)
+          const showExtended = !!utils.formatValue(styles(), 'candle.extendedHours.show')
+          const filteredData = (showExtended || (p.timespan !== 'minute' && p.timespan !== 'hour'))
+            ? kLineDataList
+            : kLineDataList.filter(d => isRegularSession(d.timestamp))
+          initializedWidget.applyMoreData(filteredData, kLineDataList.length > 0)
+          setLoading(false)
+        }
+        get()
+      })
+      initializedWidget.subscribeAction(ActionType.OnTooltipIconClick, (data) => {
+        if (data.indicatorName) {
+          switch (data.iconId) {
+            case 'visible': {
+              initializedWidget.overrideIndicator({ name: data.indicatorName, visible: true }, data.paneId)
+              break
+            }
+            case 'invisible': {
+              initializedWidget.overrideIndicator({ name: data.indicatorName, visible: false }, data.paneId)
+              break
+            }
+            case 'setting': {
+              const indicator = initializedWidget.getIndicatorByPaneId(data.paneId, data.indicatorName) as Indicator
+              setIndicatorSettingModalParams({
+                visible: true, indicatorName: data.indicatorName, paneId: data.paneId, calcParams: indicator.calcParams
+              })
+              break
+            }
+            case 'remove':
+            case 'close': {
+              if (data.paneId === 'candle_pane') {
+                const newMainIndicators = [...mainIndicators()]
+                initializedWidget.removeIndicator('candle_pane', data.indicatorName)
+                const index = newMainIndicators.findIndex(i => (typeof i === 'string' ? i : i.name) === data.indicatorName)
+                if (index > -1) {
+                  newMainIndicators.splice(index, 1)
+                }
+                setMainIndicators(newMainIndicators)
+              } else {
+                const newIndicators = { ...subIndicators() }
+                initializedWidget.removeIndicator(data.paneId, data.indicatorName)
+                delete newIndicators[data.indicatorName]
+                setSubIndicators(newIndicators)
               }
-              setMainIndicators(newMainIndicators)
-            } else {
-              const newIndicators = { ...subIndicators() }
-              initializedWidget?.removeIndicator(data.paneId, data.indicatorName)
-              delete newIndicators[data.indicatorName]
-              setSubIndicators(newIndicators)
             }
           }
         }
-      }
-    })
+        if (widgetRef) {
+          const reset = () => {
+            const children = widgetRef!.querySelectorAll('div')
+            children.forEach(child => {
+              (child as HTMLElement).style.cursor = 'auto'
+            })
+            widgetRef!.style.cursor = 'auto'
+          }
+          reset()
+          setTimeout(reset, 50)
+        }
+      })
+    }
 
     const resizeObserver = new ResizeObserver(() => {
       initializedWidget?.resize()
@@ -589,94 +693,17 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
 
   createEffect(() => {
     const t = theme()
-    widget()?.setStyles(t)
-    const color = t === 'dark' ? '#929AA5' : '#76808F'
-    widget()?.setStyles({
-      indicator: {
-        tooltip: {
-          icons: [
-            {
-              id: 'visible',
-              position: TooltipIconPosition.Middle,
-              marginLeft: 8,
-              marginTop: 7,
-              marginRight: 0,
-              marginBottom: 0,
-              paddingLeft: 0,
-              paddingTop: 0,
-              paddingRight: 0,
-              paddingBottom: 0,
-              icon: '\ue903',
-              fontFamily: 'icomoon',
-              size: 14,
-              color: color,
-              activeColor: color,
-              backgroundColor: 'transparent',
-              activeBackgroundColor: 'rgba(22, 119, 255, 0.15)'
-            },
-            {
-              id: 'invisible',
-              position: TooltipIconPosition.Middle,
-              marginLeft: 8,
-              marginTop: 7,
-              marginRight: 0,
-              marginBottom: 0,
-              paddingLeft: 0,
-              paddingTop: 0,
-              paddingRight: 0,
-              paddingBottom: 0,
-              icon: '\ue901',
-              fontFamily: 'icomoon',
-              size: 14,
-              color: color,
-              activeColor: color,
-              backgroundColor: 'transparent',
-              activeBackgroundColor: 'rgba(22, 119, 255, 0.15)'
-            },
-            {
-              id: 'setting',
-              position: TooltipIconPosition.Middle,
-              marginLeft: 6,
-              marginTop: 7,
-              marginBottom: 0,
-              marginRight: 0,
-              paddingLeft: 0,
-              paddingTop: 0,
-              paddingRight: 0,
-              paddingBottom: 0,
-              icon: '\ue902',
-              fontFamily: 'icomoon',
-              size: 14,
-              color: color,
-              activeColor: color,
-              backgroundColor: 'transparent',
-              activeBackgroundColor: 'rgba(22, 119, 255, 0.15)'
-            },
-            {
-              id: 'close',
-              position: TooltipIconPosition.Middle,
-              marginLeft: 6,
-              marginTop: 7,
-              marginRight: 0,
-              marginBottom: 0,
-              paddingLeft: 0,
-              paddingTop: 0,
-              paddingRight: 0,
-              paddingBottom: 0,
-              icon: '\ue900',
-              fontFamily: 'icomoon',
-              size: 14,
-              color: color,
-              activeColor: color,
-              backgroundColor: 'transparent',
-              activeBackgroundColor: 'rgba(22, 119, 255, 0.15)'
-            }
-          ]
-        }
-      }
-    })
     const w = widget()
     if (w) {
+      w.setStyles(t)
+      const color = t === 'dark' ? '#929AA5' : '#76808F'
+      w.setStyles({
+        indicator: {
+          tooltip: {
+            icons: getIndicatorTooltipIcons(color)
+          }
+        }
+      })
       const themeStyles = w.getStyles()
       setWidgetDefaultStyles(lodashClone(themeStyles))
     }
@@ -705,8 +732,6 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         if (w.getOverlayById('extendedHoursHighlight')) {
           w.overrideOverlay({
             id: 'extendedHoursHighlight',
-            // @ts-ignore
-            zLevel: -1,
             extendData
           })
         } else {
@@ -715,8 +740,6 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
             id: 'extendedHoursHighlight',
             groupId: 'extendedHoursHighlight',
             lock: true,
-            // @ts-ignore
-            zLevel: -1,
             extendData
           })
         }

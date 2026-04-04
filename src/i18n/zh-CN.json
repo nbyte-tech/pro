@@ -137,5 +137,10 @@
   "restore_default": "恢复默认",
   "remove_selected": "删除选中的图形",
   "remove_all": "删除所有图形",
-  "reset_chart": "重置图表"
+  "reset_chart": "重置图表",
+  "vwap": "VWAP (成交量加权平均价)",
+  "reset_period": "重置周期",
+  "session": "当日",
+  "weekly": "本周",
+  "monthly": "本月"
 }

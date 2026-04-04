@@ -130,5 +130,10 @@
   "restore_default": "Restore Defaults",
   "remove_selected": "Remove Selected Drawing",
   "remove_all": "Remove All Drawings",
-  "reset_chart": "Reset Chart"
+  "reset_chart": "Reset Chart",
+  "vwap": "VWAP (Volume Weighted Average Price)",
+  "reset_period": "Reset Period",
+  "session": "Session",
+  "weekly": "Weekly",
+  "monthly": "Monthly"
 }

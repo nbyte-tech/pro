@@ -18,6 +18,8 @@ import abcd from './abcd'
 import xabcd from './xabcd'
 import extendedHoursHighlight from './extendedHoursHighlight'
 
+import vwap from './vwap'
+
 const overlays = [
   arrow,
   circle, rect, triangle, parallelogram,
@@ -27,4 +29,10 @@ const overlays = [
   extendedHoursHighlight
 ]
 
-export default overlays
+const indicators = [
+  vwap
+]
+
+export {
+  overlays, indicators
+}

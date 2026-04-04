@@ -47,7 +47,7 @@ const IndicatorModal: Component<IndicatorModalProps> = props => {
         <li class="title">{i18n('main_indicator', props.locale)}</li>
         {
           [
-            'MA', 'EMA', 'SMA', 'BOLL', 'SAR', 'BBI'
+            'MA', 'EMA', 'SMA', 'BOLL', 'SAR', 'BBI', 'VWAP'
           ].map(name => {
             const checked = props.mainIndicators.includes(name)
             return (
@@ -68,7 +68,7 @@ const IndicatorModal: Component<IndicatorModalProps> = props => {
             'RSI', 'BIAS', 'BRAR', 'CCI', 'DMI',
             'CR', 'PSY', 'DMA', 'TRIX', 'OBV',
             'VR', 'WR', 'MTM', 'EMV', 'SAR',
-            'SMA', 'ROC', 'PVT', 'BBI', 'AO'
+            'SMA', 'ROC', 'PVT', 'BBI', 'AO', 'VWAP'
           ].map(name => {
             const checked = name in props.subIndicators
             return (
