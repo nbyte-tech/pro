@@ -18,7 +18,7 @@ import { utils, Nullable, DeepPartial, Styles } from 'klinecharts'
 
 import ChartProComponent from './ChartProComponent'
 
-import { SymbolInfo, Period, ChartPro, ChartProOptions, ChartConfig } from './types'
+import { SymbolInfo, Period, ChartPro, ChartProOptions, ChartConfig, OverlayConfig } from './types'
 
 import { Logo as LogoIcon } from './component'
 
@@ -145,6 +145,14 @@ export default class KLineChartPro implements ChartPro {
 
   setDrawingSyncId (syncId: string): void {
     this._chartApi!.setDrawingSyncId(syncId)
+  }
+
+  setOverlays (overlays: OverlayConfig[]): void {
+    this._chartApi!.setOverlays(overlays)
+  }
+
+  setLastOverlayStyles (styles: Record<string, any>): void {
+    this._chartApi!.setLastOverlayStyles(styles)
   }
 
   extractChartConfigs (): ChartConfig {

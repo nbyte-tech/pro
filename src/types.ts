@@ -110,5 +110,7 @@ export interface ChartPro {
   resize(): void
   dispose(): void
   setDrawingSyncId(syncId: string): void
+  setOverlays(overlays: OverlayConfig[]): void
+  setLastOverlayStyles(styles: Record<string, any>): void
   extractChartConfigs(): ChartConfig
 }
