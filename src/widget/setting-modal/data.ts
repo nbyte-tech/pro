@@ -110,6 +110,24 @@ export function getOptions (locale: string) {
       component: 'switch'
     },
     {
+      key: 'candle.priceMark.last.upColor',
+      text: i18n('up_color', locale),
+      group: i18n('candle', locale),
+      component: 'color'
+    },
+    {
+      key: 'candle.priceMark.last.downColor',
+      text: i18n('down_color', locale),
+      group: i18n('candle', locale),
+      component: 'color'
+    },
+    {
+      key: 'candle.priceMark.last.noChangeColor',
+      text: i18n('no_change_color', locale),
+      group: i18n('candle', locale),
+      component: 'color'
+    },
+    {
       key: 'candle.priceMark.high.show',
       text: i18n('high_price_show', locale),
       group: i18n('candle', locale),
