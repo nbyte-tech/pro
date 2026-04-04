@@ -87,6 +87,26 @@
       height: 16px;
       margin-right: 4px;
     }
+    &.screenshot, &.full-screen {
+      span {
+        display: none;
+      }
+      svg {
+        margin-right: 0;
+      }
+      &:hover {
+        span {
+          display: inline;
+        }
+        svg {
+          margin-right: 4px;
+        }
+      }
+    }
+    &.screenshot {
+      margin-left: auto;
+      border-left: solid 1px var(--klinecharts-pro-border-color);
+    }
   }
   .period + .tools {
     border-left: solid 1px var(--klinecharts-pro-border-color);
