@@ -17,7 +17,8 @@ import { render } from 'solid-js/web'
 
 import {
   init, dispose, utils, Nullable, Chart, OverlayMode, Styles, DeepPartial,
-  TooltipIconPosition, ActionType, PaneOptions, Indicator, DomPosition, FormatDateType
+  TooltipIconPosition, ActionType, PaneOptions, Indicator, DomPosition, FormatDateType,
+  IndicatorFigure
 } from 'klinecharts'
 
 import lodashSet from 'lodash/set'
@@ -65,14 +66,40 @@ function createIndicator (widget: Nullable<Chart>, indicator: string | Indicator
   return widget?.createIndicator({
     name: indicatorName,
     calcParams: (calcParams && (calcParams.length > 0 || indicatorName === 'VOL')) ? calcParams : undefined,
-    regenerateFigures: indicatorName === 'VOL' ? () => {
+    regenerateFigures: (indicatorName === 'VOL' || indicatorName === 'MACD') ? (calcParams: any[]) => {
+      if (indicatorName === 'MACD') {
+        const showHistogram = calcParams[3] ?? 1
+        const figures: IndicatorFigure[] = [
+          { key: 'dif', title: 'DIF: ', type: 'line' },
+          { key: 'dea', title: 'DEA: ', type: 'line' }
+        ]
+        if (showHistogram !== 0) {
+          figures.push({
+            key: 'macd',
+            title: 'MACD: ',
+            type: 'bar',
+            baseValue: 0,
+            styles: (data: any, indicator: any, defaultStyles: any) => {
+              const currentMacd = data.current.indicatorData?.macd
+              let color = utils.formatValue(indicator.styles, 'bars[0].noChangeColor', defaultStyles.bars[0].noChangeColor) as string
+              if (currentMacd > 0) {
+                color = utils.formatValue(indicator.styles, 'bars[0].upColor', defaultStyles.bars[0].upColor) as string
+              } else if (currentMacd < 0) {
+                color = utils.formatValue(indicator.styles, 'bars[0].downColor', defaultStyles.bars[0].downColor) as string
+              }
+              return { color }
+            }
+          })
+        }
+        return figures
+      }
       return [
         {
           key: 'volume',
           title: 'VOLUME: ',
           type: 'bar',
           baseValue: 0,
-          styles: (data, indicator, defaultStyles) => {
+          styles: (data: any, indicator: any, defaultStyles: any) => {
             const kLineData = data.current.kLineData
             if (kLineData) {
               let color = utils.formatValue(indicator.styles, 'bars[0].noChangeColor', defaultStyles.bars[0].noChangeColor) as string
@@ -102,9 +129,17 @@ function createIndicator (widget: Nullable<Chart>, indicator: string | Indicator
         res.push(icons[2])
       }
       res.push(icons[3])
+      let calcParamsText = ''
+      if (indicator.calcParams.length > 0) {
+        let params = indicator.calcParams
+        if (indicator.name === 'MACD' && params.length > 3) {
+          params = params.slice(0, 3)
+        }
+        calcParamsText = `(${params.join(',')})`
+      }
       return {
         name: indicator.shortName,
-        calcParamsText: indicator.calcParams.length > 0 ? `(${indicator.calcParams.join(',')})` : '',
+        calcParamsText,
         icons: res
       }
     }

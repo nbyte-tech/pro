@@ -81,7 +81,16 @@ export default {
   MACD: [
     { paramNameKey: 'fast_length', precision: 0, min: 1, default: 12 },
     { paramNameKey: 'slow_length', precision: 0, min: 1, default: 26 },
-    { paramNameKey: 'signal_length', precision: 0, min: 1, default: 9 }
+    { paramNameKey: 'signal_length', precision: 0, min: 1, default: 9 },
+    {
+      paramNameKey: 'show_histogram',
+      type: 'select',
+      default: 1,
+      dataSource: [
+        { key: '0', text: 'hide' },
+        { key: '1', text: 'show' }
+      ]
+    }
   ],
   OBV: [
     { paramNameKey: 'period', precision: 0, min: 1, default: 30 }
