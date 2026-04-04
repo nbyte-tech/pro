@@ -1,7 +1,7 @@
 {
-  "indicator": "Indicator",
-  "main_indicator": "Main Indicator",
-  "sub_indicator": "Sub Indicator",
+  "indicator": "Indicators",
+  "main_indicator": "Main Indicators",
+  "sub_indicator": "Sub Indicators",
   "setting": "Settings",
   "timezone": "Timezone",
   "screenshot": "Screenshot",
