@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import { createSignal, Component, JSX } from 'solid-js'
+import { createSignal, Component, JSX, For } from 'solid-js'
 
 export interface SelectDataSourceItem {
   key: string
@@ -35,9 +35,16 @@ const Select: Component<SelectProps> = props => {
   return (
     <div
       style={props.style}
-      class={`klinecharts-pro-select ${props.class ?? ''} ${open() ? 'klinecharts-pro-select-show' : ''}`}
+      classList={{
+        'klinecharts-pro-select': true,
+        [`${props.class ?? ''}`]: !!props.class,
+        'klinecharts-pro-select-show': open()
+      }}
       tabIndex="0"
-      onClick={_ => { setOpen(o => !o) }}
+      onClick={e => {
+        e.stopPropagation()
+        setOpen(o => !o)
+      }}
       onBlur={_ => { setOpen(false) }}>
       <div
         class="selector-container">
@@ -51,25 +58,27 @@ const Select: Component<SelectProps> = props => {
         <div
           class="drop-down-container">
           <ul>
-            {
-              props.dataSource.map(data => {
-                const d = data as SelectDataSourceItem
-                // @ts-expect-error
-                const v = d[props.valueKey ?? 'text'] ?? data
-                return (
-                  <li
-                    onClick={e => {
-                      e.stopPropagation()
-                      if (props.value !== v) {
-                        props.onSelected?.(data)
-                      }
-                      setOpen(false)
-                    }}>
-                    {v}
-                  </li>
-                )
-              })
-            }
+            <For each={props.dataSource as any[]}>
+              {
+                (data) => {
+                  const d = data as SelectDataSourceItem
+                  // @ts-expect-error
+                  const v = d[props.valueKey ?? 'text'] ?? data
+                  return (
+                    <li
+                      onClick={e => {
+                        e.stopPropagation()
+                        if (props.value !== v) {
+                          props.onSelected?.(data)
+                        }
+                        setOpen(false)
+                      }}>
+                      {v}
+                    </li>
+                  )
+                }
+              }
+            </For>
           </ul>
         </div>
       }

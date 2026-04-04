@@ -44,6 +44,8 @@
     transform: scaleY(0.9);
     transform-origin: top;
     opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
     z-index: 100;
     border-radius: 8px;
     max-height: 200px;
@@ -86,6 +88,7 @@
 }
 
 .@{prefix-cls}-select-show {
+  z-index: 101;
   .selector-container {
     border-color: var(--klinecharts-pro-primary-color)!important;
     .value {
@@ -98,5 +101,7 @@
   .drop-down-container {
     transform: scaleY(1)!important;
     opacity: 1!important;
+    visibility: visible!important;
+    pointer-events: auto!important;
   }
 }
