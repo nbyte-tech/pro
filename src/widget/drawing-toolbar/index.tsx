@@ -80,9 +80,6 @@ const DrawingToolbar: Component<DrawingToolbarProps> = (props) => {
             props.onTypeChange(v as string)
           }}/>
       </div>
-      <div class="item" onClick={() => props.onLockChange(!props.overlay.lock)}>
-        <Icon name={props.overlay.lock ? 'lock' : 'unlock'} />
-      </div>
       <div class="item" onClick={() => props.onVisibleChange(!props.overlay.visible)}>
         <Icon name={props.overlay.visible ? 'visible' : 'invisible'} />
       </div>

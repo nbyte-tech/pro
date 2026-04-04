@@ -22,10 +22,11 @@ import { SymbolInfo, Period, ChartPro, ChartProOptions, ChartConfig } from './ty
 
 import { Logo as LogoIcon } from './component'
 
-const Logo = (symbol: SymbolInfo) => (
+const Logo = (symbol: SymbolInfo, period: Period) => (
   <div class="klinecharts-pro-watermark-logo">
     <LogoIcon opacity={0.4} />
     <div class="ticker">{symbol.ticker}</div>
+    <div class="period">{period.text}</div>
   </div>
 )
 

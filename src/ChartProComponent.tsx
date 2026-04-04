@@ -64,8 +64,32 @@ function broadcastOverlay (source: any, type: string, data: any) {
   if (!syncId) return
   const ticker = source.symbol().ticker
   chartInstances.forEach(inst => {
-    if (inst !== source && inst.drawingSyncId() === syncId && inst.symbol().ticker === ticker) {
-      inst.receiveOverlay(type, data)
+    if (inst !== source && inst.drawingSyncId() === syncId) {
+      if (inst.symbol().ticker === ticker) {
+        inst.receiveOverlay(type, data)
+      } else if ((type === 'create' || type === 'update') && data.name && data.styles) {
+        inst.receiveLastOverlayStyles(data.name, data.styles)
+      }
+    }
+  })
+}
+
+function broadcastIndicator (source: any, data: any) {
+  const syncId = source.drawingSyncId()
+  if (!syncId) return
+  chartInstances.forEach(inst => {
+    if (inst !== source && inst.drawingSyncId() === syncId) {
+      inst.receiveIndicator(data)
+    }
+  })
+}
+
+function broadcastStyles (source: any, styles: DeepPartial<Styles>) {
+  const syncId = source.drawingSyncId()
+  if (!syncId) return
+  chartInstances.forEach(inst => {
+    if (inst !== source && inst.drawingSyncId() === syncId) {
+      inst.receiveStyles(styles)
     }
   })
 }
@@ -370,6 +394,8 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
 
   let isSyncingCrosshair = false
   let isSyncingOverlay = false
+  let isSyncingIndicator = false
+  let isSyncingStyles = false
 
   const instance: any = {
     drawingSyncId,
@@ -398,12 +424,38 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
     },
     receiveOverlay: (type: string, data: any) => {
       isSyncingOverlay = true
-      if (type === 'create' || type === 'update') {
+      if (type === 'create') {
         widget()?.createOverlay(data)
+      } else if (type === 'update') {
+        widget()?.overrideOverlay(data)
       } else if (type === 'remove') {
         widget()?.removeOverlay(data)
       }
+      if (type !== 'remove' && data.name && data.styles) {
+        const lastStyles = lodashClone(lastOverlayStyles())
+        lastStyles[data.name] = data.styles
+        setLastOverlayStyles(lastStyles)
+      }
       isSyncingOverlay = false
+    },
+    receiveIndicator: (data: any) => {
+      isSyncingIndicator = true
+      widget()?.overrideIndicator(data, data.paneId)
+      setIndicatorUpdateCount(indicatorUpdateCount() + 1)
+      isSyncingIndicator = false
+    },
+    receiveStyles: (s: DeepPartial<Styles>) => {
+      isSyncingStyles = true
+      widget()?.setStyles(s)
+      const newStyles = lodashClone(styles())
+      lodashMerge(newStyles, s)
+      setStyles(newStyles)
+      isSyncingStyles = false
+    },
+    receiveLastOverlayStyles: (name: string, styles: any) => {
+      const lastStyles = lodashClone(lastOverlayStyles())
+      lastStyles[name] = styles
+      setLastOverlayStyles(lastStyles)
     }
   }
 
@@ -498,6 +550,9 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         const newStyles = lodashClone(styles())
         lodashMerge(newStyles, s)
         setStyles(newStyles)
+      }
+      if (!isSyncingStyles) {
+        broadcastStyles(instance, s)
       }
     },
     getStyles: () => widget()!.getStyles(),
@@ -735,7 +790,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
           if (utils.isString(wm)) {
             return <div class="klinecharts-pro-watermark" innerHTML={wm as string}/>
           } else if (typeof wm === 'function') {
-            return <div class="klinecharts-pro-watermark">{wm(symbol())}</div>
+            return <div class="klinecharts-pro-watermark">{wm(symbol(), period())}</div>
           } else {
             return <div class="klinecharts-pro-watermark">{wm as Node}</div>
           }
@@ -1096,21 +1151,33 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
           onClose={() => {
             const modalParams = indicatorSettingModalParams()
             if (modalParams.visible) {
-              widget()?.overrideIndicator({
+              const data = {
                 name: modalParams.indicatorName,
                 calcParams: modalParams.calcParams,
                 styles: modalParams.styles
-              }, modalParams.paneId)
+              }
+              widget()?.overrideIndicator(data, modalParams.paneId)
+              if (!isSyncingIndicator) {
+                broadcastIndicator(instance, { ...data, paneId: modalParams.paneId })
+              }
             }
             setIndicatorSettingModalParams({ visible: false, indicatorName: '', paneId: '', calcParams: [], styles: {} })
           }}
           onChange={({ calcParams, styles }) => {
             const modalParams = indicatorSettingModalParams()
-            widget()?.overrideIndicator({ name: modalParams.indicatorName, calcParams, styles }, modalParams.paneId)
+            const data = { name: modalParams.indicatorName, calcParams, styles }
+            widget()?.overrideIndicator(data, modalParams.paneId)
+            if (!isSyncingIndicator) {
+              broadcastIndicator(instance, { ...data, paneId: modalParams.paneId })
+            }
           }}
           onConfirm={({ calcParams, styles })=> {
             const modalParams = indicatorSettingModalParams()
-            widget()?.overrideIndicator({ name: modalParams.indicatorName, calcParams, styles }, modalParams.paneId)
+            const data = { name: modalParams.indicatorName, calcParams, styles }
+            widget()?.overrideIndicator(data, modalParams.paneId)
+            if (!isSyncingIndicator) {
+              broadcastIndicator(instance, { ...data, paneId: modalParams.paneId })
+            }
             
             // Sync internal signals to ensure configs are remembered in state
             if (modalParams.paneId === 'candle_pane') {
@@ -1176,7 +1243,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
               lodashSet(styles, 'rectText.borderColor', color)
               widget()?.overrideOverlay({ id: overlay.id, styles })
               if (!isSyncingOverlay) {
-                broadcastOverlay(instance, 'update', { id: overlay.id, styles })
+                broadcastOverlay(instance, 'update', { id: overlay.id, name: overlay.name, styles })
               }
               setSelectedOverlay({ ...overlay, styles })
               setOverlayUpdateCount(overlayUpdateCount() + 1)
@@ -1194,7 +1261,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
               lodashSet(styles, 'arc.size', size)
               widget()?.overrideOverlay({ id: overlay.id, styles })
               if (!isSyncingOverlay) {
-                broadcastOverlay(instance, 'update', { id: overlay.id, styles })
+                broadcastOverlay(instance, 'update', { id: overlay.id, name: overlay.name, styles })
               }
               setSelectedOverlay({ ...overlay, styles })
               setOverlayUpdateCount(overlayUpdateCount() + 1)
@@ -1212,7 +1279,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
               lodashSet(styles, 'arc.style', style)
               widget()?.overrideOverlay({ id: overlay.id, styles })
               if (!isSyncingOverlay) {
-                broadcastOverlay(instance, 'update', { id: overlay.id, styles })
+                broadcastOverlay(instance, 'update', { id: overlay.id, name: overlay.name, styles })
               }
               setSelectedOverlay({ ...overlay, styles })
               setOverlayUpdateCount(overlayUpdateCount() + 1)
