@@ -16,7 +16,7 @@ import eightWaves from './eightWaves'
 import anyWaves from './anyWaves'
 import abcd from './abcd'
 import xabcd from './xabcd'
-import extendedHoursHighlight from './extendedHoursHighlight'
+import extendedHoursHighlightIndicator from './extendedHoursHighlightIndicator'
 
 import vwap from './vwap'
 
@@ -25,12 +25,12 @@ const overlays = [
   circle, rect, triangle, parallelogram,
   fibonacciCircle, fibonacciSegment, fibonacciSpiral,
   fibonacciSpeedResistanceFan, fibonacciExtension, gannBox,
-  threeWaves, fiveWaves, eightWaves, anyWaves, abcd, xabcd,
-  extendedHoursHighlight
+  threeWaves, fiveWaves, eightWaves, anyWaves, abcd, xabcd
 ]
 
 const indicators = [
-  vwap
+  vwap,
+  extendedHoursHighlightIndicator
 ]
 
 export {

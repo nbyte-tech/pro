@@ -654,11 +654,11 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         }
         if (widgetRef) {
           const reset = () => {
-            const children = widgetRef!.querySelectorAll('div')
-            children.forEach(child => {
+            const children = (widgetRef as HTMLElement).querySelectorAll('div')
+            Array.from(children).forEach(child => {
               (child as HTMLElement).style.cursor = 'auto'
             })
-            widgetRef!.style.cursor = 'auto'
+            ;(widgetRef as HTMLElement).style.cursor = 'auto'
           }
           reset()
           setTimeout(reset, 50)
@@ -760,26 +760,11 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       const showHighlight = !!utils.formatValue(s, 'candle.extendedHours.show') && (p.timespan === 'minute' || p.timespan === 'hour')
 
       if (showHighlight) {
-        const extendData = {
-          // @ts-ignore
-          getDataList: () => w.getDataList()
-        }
-        if (w.getOverlayById('extendedHoursHighlight')) {
-          w.overrideOverlay({
-            id: 'extendedHoursHighlight',
-            extendData
-          })
-        } else {
-          w.createOverlay({
-            name: 'extendedHoursHighlight',
-            id: 'extendedHoursHighlight',
-            groupId: 'extendedHoursHighlight',
-            lock: true,
-            extendData
-          })
+        if (!w.getIndicatorByPaneId('candle_pane', 'EXTENDED_HOURS_HIGHLIGHT')) {
+          w.createIndicator('EXTENDED_HOURS_HIGHLIGHT', true, { id: 'candle_pane' })
         }
       } else {
-        w.removeOverlay({ id: 'extendedHoursHighlight' })
+        w.removeIndicator('candle_pane', 'EXTENDED_HOURS_HIGHLIGHT')
       }
     }
   })
