@@ -31,8 +31,44 @@ import timezonePlugin from 'dayjs/plugin/timezone'
 
 dayjs.extend(utc)
 dayjs.extend(timezonePlugin)
-
 import { SelectDataSourceItem, Loading } from './component'
+
+// Chart instance registry for sync
+const chartInstances = new Set<any>()
+
+function broadcastCrosshair (source: any, crosshair: any) {
+  const syncId = source.drawingSyncId()
+  if (!syncId) return
+  const w = source.widget()
+  if (!w) return
+  let broadcastData = crosshair
+  if (crosshair.x !== undefined && crosshair.y !== undefined) {
+    const point = w.convertFromPixel([{ x: crosshair.x, y: crosshair.y }], { paneId: crosshair.paneId || 'candle_pane' })[0]
+    if (point) {
+      broadcastData = {
+        ...crosshair,
+        timestamp: crosshair.kLineData?.timestamp || point.timestamp,
+        value: point.value
+      }
+    }
+  }
+  chartInstances.forEach(inst => {
+    if (inst !== source && inst.drawingSyncId() === syncId) {
+      inst.receiveCrosshair(broadcastData, source.symbol())
+    }
+  })
+}
+
+function broadcastOverlay (source: any, type: string, data: any) {
+  const syncId = source.drawingSyncId()
+  if (!syncId) return
+  const ticker = source.symbol().ticker
+  chartInstances.forEach(inst => {
+    if (inst !== source && inst.drawingSyncId() === syncId && inst.symbol().ticker === ticker) {
+      inst.receiveOverlay(type, data)
+    }
+  })
+}
 
 import {
   PeriodBar, DrawingBar, IndicatorModal, SettingModal,
@@ -45,8 +81,9 @@ import indicatorConfigs from './widget/indicator-setting-modal/data'
 
 import { SymbolInfo, Period, ChartProOptions, ChartPro, ChartConfig, IndicatorConfig } from './types'
 
-export interface ChartProComponentProps extends Required<Omit<ChartProOptions, 'container' | 'onConfigChange'>> {
+export interface ChartProComponentProps extends Required<Omit<ChartProOptions, 'container' | 'onConfigChange' | 'drawingSyncId'>> {
   ref: (chart: ChartPro) => void
+  drawingSyncId?: string
   onConfigChange?: (config: ChartConfig) => void
 }
 
@@ -311,6 +348,12 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
     setDrawingBarVisible(props.drawingBarVisible)
   })
 
+  const [drawingSyncId, setDrawingSyncId] = createSignal(props.drawingSyncId)
+
+  createEffect(() => {
+    setDrawingSyncId(props.drawingSyncId)
+  })
+
   const [symbolSearchModalVisible, setSymbolSearchModalVisible] = createSignal(false)
 
   const [loadingVisible, setLoadingVisible] = createSignal(false)
@@ -324,6 +367,53 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
 
   const [indicatorUpdateCount, setIndicatorUpdateCount] = createSignal(0)
   const [overlayUpdateCount, setOverlayUpdateCount] = createSignal(0)
+
+  let isSyncingCrosshair = false
+  let isSyncingOverlay = false
+
+  const instance: any = {
+    drawingSyncId,
+    symbol,
+    widget,
+    receiveCrosshair: (data: any, sourceSymbol: any) => {
+      const w = widget()
+      if (w) {
+        isSyncingCrosshair = true
+        if (data.timestamp !== undefined) {
+          const currentSymbol = symbol()
+          const point: any = { timestamp: data.timestamp }
+          if (sourceSymbol?.ticker === currentSymbol.ticker && data.value !== undefined) {
+            point.value = data.value
+          }
+          const coordinate = w.convertToPixel(point, { paneId: data.paneId || 'candle_pane' }) as any
+          const crosshairData = { ...data, x: coordinate.x, y: coordinate.y }
+          // @ts-expect-error
+          w._chartStore.getCrosshairStore().set(crosshairData)
+        } else {
+          // @ts-expect-error
+          w._chartStore.getCrosshairStore().set(data)
+        }
+        isSyncingCrosshair = false
+      }
+    },
+    receiveOverlay: (type: string, data: any) => {
+      isSyncingOverlay = true
+      if (type === 'create' || type === 'update') {
+        widget()?.createOverlay(data)
+      } else if (type === 'remove') {
+        widget()?.removeOverlay(data)
+      }
+      isSyncingOverlay = false
+    }
+  }
+
+  onMount(() => {
+    chartInstances.add(instance)
+  })
+
+  onCleanup(() => {
+    chartInstances.delete(instance)
+  })
 
   const createOverlay = (overlay: OverlayCreate) => {
     const name = typeof overlay === 'string' ? overlay : overlay.name
@@ -341,15 +431,28 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       },
       onPressedMoveEnd: (e) => {
         setOverlayUpdateCount(overlayUpdateCount() + 1)
+        if (!isSyncingOverlay) {
+          broadcastOverlay(instance, 'update', {
+            name: e.overlay.name, id: e.overlay.id, points: e.overlay.points, styles: e.overlay.styles, lock: e.overlay.lock, visible: e.overlay.visible, mode: e.overlay.mode, extendData: e.overlay.extendData
+          })
+        }
         return true
       },
       onDrawEnd: (e) => {
         setSelectedOverlay(e.overlay)
         setOverlayUpdateCount(overlayUpdateCount() + 1)
+        if (!isSyncingOverlay) {
+          broadcastOverlay(instance, 'create', {
+            name: e.overlay.name, id: e.overlay.id, points: e.overlay.points, styles: e.overlay.styles, lock: e.overlay.lock, visible: e.overlay.visible, mode: e.overlay.mode, extendData: e.overlay.extendData
+          })
+        }
         return true
       },
       onRemoved: (e) => {
         setOverlayUpdateCount(overlayUpdateCount() + 1)
+        if (!isSyncingOverlay) {
+          broadcastOverlay(instance, 'remove', e.overlay.id)
+        }
         return true
       }
     })
@@ -374,6 +477,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         name: i.name, id: i.id, points: i.points, styles: i.styles, lock: i.lock, visible: i.visible, mode: i.mode, extendData: i.extendData
       })) || [],
       lastOverlayStyles: lastOverlayStyles(),
+      drawingSyncId: drawingSyncId(),
       styles: lodashMerge({}, widgetDefaultStyles(), styles()),
       theme: theme(),
       locale: locale()
@@ -413,6 +517,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         dispose(widget()!)
       }
     },
+    setDrawingSyncId,
     extractChartConfigs: () => {
       return {
         symbol: symbol(),
@@ -431,6 +536,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
           name: i.name, id: i.id, points: i.points, styles: i.styles, lock: i.lock, visible: i.visible, mode: i.mode, extendData: i.extendData
         })) || [],
         lastOverlayStyles: lastOverlayStyles(),
+        drawingSyncId: drawingSyncId(),
         styles: lodashMerge({}, widgetDefaultStyles(), styles()),
         theme: theme(),
         locale: locale()
@@ -781,6 +887,11 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
           setTimeout(reset, 50)
         }
       })
+
+      initializedWidget.subscribeAction(ActionType.OnCrosshairChange, (data) => {
+        if (isSyncingCrosshair) return
+        broadcastCrosshair(instance, data)
+      })
     }
 
     const resizeObserver = new ResizeObserver(() => {
@@ -1064,6 +1175,9 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
               lodashSet(styles, 'rectText.color', color)
               lodashSet(styles, 'rectText.borderColor', color)
               widget()?.overrideOverlay({ id: overlay.id, styles })
+              if (!isSyncingOverlay) {
+                broadcastOverlay(instance, 'update', { id: overlay.id, styles })
+              }
               setSelectedOverlay({ ...overlay, styles })
               setOverlayUpdateCount(overlayUpdateCount() + 1)
               const lastStyles = lodashClone(lastOverlayStyles())
@@ -1079,6 +1193,9 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
               lodashSet(styles, 'rect.borderSize', size)
               lodashSet(styles, 'arc.size', size)
               widget()?.overrideOverlay({ id: overlay.id, styles })
+              if (!isSyncingOverlay) {
+                broadcastOverlay(instance, 'update', { id: overlay.id, styles })
+              }
               setSelectedOverlay({ ...overlay, styles })
               setOverlayUpdateCount(overlayUpdateCount() + 1)
               const lastStyles = lodashClone(lastOverlayStyles())
@@ -1094,6 +1211,9 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
               lodashSet(styles, 'rect.borderStyle', style)
               lodashSet(styles, 'arc.style', style)
               widget()?.overrideOverlay({ id: overlay.id, styles })
+              if (!isSyncingOverlay) {
+                broadcastOverlay(instance, 'update', { id: overlay.id, styles })
+              }
               setSelectedOverlay({ ...overlay, styles })
               setOverlayUpdateCount(overlayUpdateCount() + 1)
               const lastStyles = lodashClone(lastOverlayStyles())
@@ -1103,18 +1223,27 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
             onLockChange={lock => {
               const overlay = selectedOverlay()!
               widget()?.overrideOverlay({ id: overlay.id, lock })
+              if (!isSyncingOverlay) {
+                broadcastOverlay(instance, 'update', { id: overlay.id, lock })
+              }
               setSelectedOverlay({ ...overlay, lock })
               setOverlayUpdateCount(overlayUpdateCount() + 1)
             }}
             onVisibleChange={visible => {
               const overlay = selectedOverlay()!
               widget()?.overrideOverlay({ id: overlay.id, visible })
+              if (!isSyncingOverlay) {
+                broadcastOverlay(instance, 'update', { id: overlay.id, visible })
+              }
               setSelectedOverlay({ ...overlay, visible })
               setOverlayUpdateCount(overlayUpdateCount() + 1)
             }}
             onRemoveClick={() => {
               const overlay = selectedOverlay()!
               widget()?.removeOverlay(overlay.id)
+              if (!isSyncingOverlay) {
+                broadcastOverlay(instance, 'remove', overlay.id)
+              }
               setSelectedOverlay(null)
               setOverlayUpdateCount(overlayUpdateCount() + 1)
             }}

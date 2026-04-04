@@ -58,6 +58,7 @@ export interface ChartProOptions {
   subIndicators?: (string | IndicatorConfig)[]
   overlays?: OverlayConfig[]
   lastOverlayStyles?: Record<string, any>
+  drawingSyncId?: string
   datafeed: Datafeed
   onConfigChange?: (config: ChartConfig) => void
 }
@@ -87,6 +88,7 @@ export interface ChartConfig {
   subIndicators: (string | IndicatorConfig)[]
   overlays?: OverlayConfig[]
   lastOverlayStyles?: Record<string, any>
+  drawingSyncId?: string
   styles: DeepPartial<Styles>
   theme: string
   locale: string
@@ -107,5 +109,6 @@ export interface ChartPro {
   getPeriod(): Period
   resize(): void
   dispose(): void
+  setDrawingSyncId(syncId: string): void
   extractChartConfigs(): ChartConfig
 }

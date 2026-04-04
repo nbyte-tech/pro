@@ -74,6 +74,7 @@ export default class KLineChartPro implements ChartPro {
           subIndicators={options.subIndicators ?? ['VOL']}
           overlays={options.overlays ?? []}
           lastOverlayStyles={options.lastOverlayStyles ?? {}}
+          drawingSyncId={options.drawingSyncId}
           datafeed={options.datafeed}
           onConfigChange={options.onConfigChange}/>
       ),
@@ -139,6 +140,10 @@ export default class KLineChartPro implements ChartPro {
 
   resize (): void {
     this._chartApi!.resize()
+  }
+
+  setDrawingSyncId (syncId: string): void {
+    this._chartApi!.setDrawingSyncId(syncId)
   }
 
   extractChartConfigs (): ChartConfig {
