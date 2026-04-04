@@ -536,56 +536,65 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         }, watermarkContainer)
       }
 
+      const setPaneYAxisWheelListener = (paneId: string) => {
+        const container = initializedWidget.getDom(paneId, DomPosition.YAxis)
+        if (container) {
+          container.addEventListener('wheel', (e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            const rect = container.getBoundingClientRect()
+            const delta = e.deltaY
+            if (delta === 0) {
+              return
+            }
+            const zoomFactor = Math.pow(0.95, -delta / 100)
+            const mouseY = e.clientY - rect.top
+
+            // @ts-expect-error
+            const pane = initializedWidget!._panes.get(paneId)
+            if (pane) {
+              const yAxis = pane.getAxisComponent()
+              const { min, max, range } = yAxis.getExtremum()
+              const mouseAxisValue = (1 - mouseY / rect.height) * range + min
+              const newTopAxisValue = mouseAxisValue + (max - mouseAxisValue) * zoomFactor
+              const newBottomAxisValue = mouseAxisValue - (mouseAxisValue - min) * zoomFactor
+              const newRange = newTopAxisValue - newBottomAxisValue
+
+              yAxis.setExtremum({
+                min: newBottomAxisValue,
+                max: newTopAxisValue,
+                range: newRange,
+                realMin: yAxis.convertToRealValue(newBottomAxisValue),
+                realMax: yAxis.convertToRealValue(newTopAxisValue),
+                realRange: yAxis.convertToRealValue(newTopAxisValue) - yAxis.convertToRealValue(newBottomAxisValue)
+              })
+              // @ts-expect-error
+              initializedWidget!.adjustPaneViewport(false, true, true, true, true)
+            }
+          }, { passive: false })
+
+          container.addEventListener('dblclick', () => {
+            // @ts-expect-error
+            const pane = initializedWidget!._panes.get(paneId)
+            if (pane) {
+              const yAxis = pane.getAxisComponent()
+              yAxis.setAutoCalcTickFlag(true)
+              // @ts-expect-error
+              initializedWidget!.adjustPaneViewport(false, true, true, true, true)
+            }
+          })
+        }
+      }
+      
+      // @ts-ignore
+      initializedWidget.setPaneYAxisWheelListener = setPaneYAxisWheelListener
+
       const priceUnitContainer = initializedWidget.getDom('candle_pane', DomPosition.YAxis)
       priceUnitDom = document.createElement('span')
       priceUnitDom.className = 'klinecharts-pro-price-unit'
       priceUnitContainer?.appendChild(priceUnitDom)
-      if (priceUnitContainer) {
-        priceUnitContainer.addEventListener('wheel', (e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          const rect = priceUnitContainer.getBoundingClientRect()
-          const delta = e.deltaY
-          if (delta === 0) {
-            return
-          }
-          const zoomFactor = Math.pow(0.95, -delta / 100)
-          const mouseY = e.clientY - rect.top
-
-          // @ts-expect-error
-          const pane = initializedWidget!._panes.get('candle_pane')
-          if (pane) {
-            const yAxis = pane.getAxisComponent()
-            const { min, max, range } = yAxis.getExtremum()
-            const mouseAxisValue = (1 - mouseY / rect.height) * range + min
-            const newTopAxisValue = mouseAxisValue + (max - mouseAxisValue) * zoomFactor
-            const newBottomAxisValue = mouseAxisValue - (mouseAxisValue - min) * zoomFactor
-            const newRange = newTopAxisValue - newBottomAxisValue
-
-            yAxis.setExtremum({
-              min: newBottomAxisValue,
-              max: newTopAxisValue,
-              range: newRange,
-              realMin: yAxis.convertToRealValue(newBottomAxisValue),
-              realMax: yAxis.convertToRealValue(newTopAxisValue),
-              realRange: yAxis.convertToRealValue(newTopAxisValue) - yAxis.convertToRealValue(newBottomAxisValue)
-            })
-            // @ts-expect-error
-            initializedWidget!.adjustPaneViewport(false, true, true, true, true)
-          }
-        }, { passive: false })
-
-        priceUnitContainer.addEventListener('dblclick', () => {
-          // @ts-expect-error
-          const pane = initializedWidget!._panes.get('candle_pane')
-          if (pane) {
-            const yAxis = pane.getAxisComponent()
-            yAxis.setAutoCalcTickFlag(true)
-            // @ts-expect-error
-            initializedWidget!.adjustPaneViewport(false, true, true, true, true)
-          }
-        })
-      }
+      
+      setPaneYAxisWheelListener('candle_pane')
 
       mainIndicators().forEach(indicator => {
         createIndicator(initializedWidget, indicator, true, { id: 'candle_pane' })
@@ -594,6 +603,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       props.subIndicators!.forEach(indicator => {
         const paneId = createIndicator(initializedWidget, indicator, true)
         if (paneId) {
+          setPaneYAxisWheelListener(paneId)
           const name = typeof indicator === 'string' ? indicator : indicator.name
           subIndicatorMap[name] = paneId
         }
@@ -814,6 +824,8 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
             if (data.added) {
               const paneId = createIndicator(widget(), data.name)
               if (paneId) {
+                // @ts-ignore
+                widget()?.setPaneYAxisWheelListener?.(paneId)
                 newSubIndicators[data.name] = paneId
               }
             } else {
