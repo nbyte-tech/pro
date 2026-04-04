@@ -17,7 +17,7 @@ import anyWaves from './anyWaves'
 import abcd from './abcd'
 import xabcd from './xabcd'
 import extendedHoursHighlightIndicator from './extendedHoursHighlightIndicator'
-
+import macd from './macd'
 import vwap from './vwap'
 
 const overlays = [
@@ -30,6 +30,7 @@ const overlays = [
 
 const indicators = [
   vwap,
+  macd,
   extendedHoursHighlightIndicator
 ]
 

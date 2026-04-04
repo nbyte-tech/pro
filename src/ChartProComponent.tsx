@@ -2,9 +2,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
-
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
-
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -66,33 +66,7 @@ function createIndicator (widget: Nullable<Chart>, indicator: string | Indicator
   return widget?.createIndicator({
     name: indicatorName,
     calcParams: (calcParams && (calcParams.length > 0 || indicatorName === 'VOL')) ? calcParams : undefined,
-    regenerateFigures: (indicatorName === 'VOL' || indicatorName === 'MACD') ? (calcParams: any[]) => {
-      if (indicatorName === 'MACD') {
-        const showHistogram = calcParams[3] ?? 1
-        const figures: IndicatorFigure[] = [
-          { key: 'dif', title: 'DIF: ', type: 'line' },
-          { key: 'dea', title: 'DEA: ', type: 'line' }
-        ]
-        if (showHistogram !== 0) {
-          figures.push({
-            key: 'macd',
-            title: 'MACD: ',
-            type: 'bar',
-            baseValue: 0,
-            styles: (data: any, indicator: any, defaultStyles: any) => {
-              const currentMacd = data.current.indicatorData?.macd
-              let color = utils.formatValue(indicator.styles, 'bars[0].noChangeColor', defaultStyles.bars[0].noChangeColor) as string
-              if (currentMacd > 0) {
-                color = utils.formatValue(indicator.styles, 'bars[0].upColor', defaultStyles.bars[0].upColor) as string
-              } else if (currentMacd < 0) {
-                color = utils.formatValue(indicator.styles, 'bars[0].downColor', defaultStyles.bars[0].downColor) as string
-              }
-              return { color }
-            }
-          })
-        }
-        return figures
-      }
+    regenerateFigures: (indicatorName === 'VOL') ? (calcParams: any[]) => {
       return [
         {
           key: 'volume',
@@ -240,7 +214,61 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
   const [period, setPeriod] = createSignal(props.period)
   const [indicatorModalVisible, setIndicatorModalVisible] = createSignal(false)
   const [mainIndicators, setMainIndicators] = createSignal<Array<string | IndicatorConfig>>([...(props.mainIndicators!)])
-  const [subIndicators, setSubIndicators] = createSignal<Record<string, string>>({})
+  const [subIndicators, setSubIndicators] = createSignal<Array<{ name: string, paneId: string }>>([])
+
+  createEffect(() => {
+    setMainIndicators([...(props.mainIndicators!)])
+  })
+
+  // Full reconciliation effect to ensure widget state matches props/signals
+  createEffect(() => {
+    const w = widget()
+    const main = mainIndicators()
+    if (w) {
+      // Reconcile main indicators on candle_pane
+      main.forEach(item => {
+        const name = typeof item === 'string' ? item : item.name
+        const params = typeof item === 'string' ? undefined : item.calcParams
+        const existing = w.getIndicatorByPaneId('candle_pane', name) as Indicator
+        if (!existing) {
+          createIndicator(w, item, true, { id: 'candle_pane' })
+        } else if (params && JSON.stringify(existing.calcParams) !== JSON.stringify(params)) {
+          w.overrideIndicator({ name, calcParams: params }, 'candle_pane')
+        }
+      })
+      
+      // Reconcile sub indicators
+      const subs = props.subIndicators || []
+      subs.forEach(item => {
+        const name = typeof item === 'string' ? item : item.name
+        const params = typeof item === 'string' ? undefined : item.calcParams
+        
+        // Find if it exists in any non-candle pane
+        let existingPaneId: string | undefined = undefined
+        // @ts-expect-error
+        w._panes.forEach(pane => {
+          if (pane.getId() !== 'candle_pane' && w.getIndicatorByPaneId(pane.getId(), name)) {
+            existingPaneId = pane.getId()
+          }
+        })
+        
+        if (!existingPaneId) {
+          const paneId = createIndicator(w, item, true)
+          if (paneId) {
+            // @ts-ignore
+            w.setPaneYAxisWheelListener?.(paneId)
+            const newSubIndicators = [...subIndicators(), { name, paneId }]
+            untrack(() => setSubIndicators(newSubIndicators))
+          }
+        } else if (params) {
+          const existing = w.getIndicatorByPaneId(existingPaneId, name) as Indicator
+          if (JSON.stringify(existing.calcParams) !== JSON.stringify(params)) {
+            w.overrideIndicator({ name, calcParams: params }, existingPaneId)
+          }
+        }
+      })
+    }
+  })
 
   const defaultTz = props.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
   const [timezone, setTimezone] = createSignal<SelectDataSourceItem>({ key: defaultTz, text: translateTimezone(defaultTz, props.locale) })
@@ -251,6 +279,10 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
   const [screenshotUrl, setScreenshotUrl] = createSignal('')
 
   const [drawingBarVisible, setDrawingBarVisible] = createSignal(props.drawingBarVisible)
+
+  createEffect(() => {
+    setDrawingBarVisible(props.drawingBarVisible)
+  })
 
   const [symbolSearchModalVisible, setSymbolSearchModalVisible] = createSignal(false)
 
@@ -273,10 +305,9 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         const indicator = widget()?.getIndicatorByPaneId('candle_pane', name) as Indicator
         return { name, calcParams: indicator?.calcParams }
       }),
-      subIndicators: Object.keys(subIndicators()).map(name => {
-        const paneId = (subIndicators() as any)[name]
-        const indicator = widget()?.getIndicatorByPaneId(paneId, name) as Indicator
-        return { name, calcParams: indicator?.calcParams }
+      subIndicators: subIndicators().map(item => {
+        const indicator = widget()?.getIndicatorByPaneId(item.paneId, item.name) as Indicator
+        return { name: item.name, calcParams: indicator?.calcParams }
       }),
       styles: lodashMerge({}, widgetDefaultStyles(), styles()),
       theme: theme(),
@@ -599,16 +630,16 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       mainIndicators().forEach(indicator => {
         createIndicator(initializedWidget, indicator, true, { id: 'candle_pane' })
       })
-      const subIndicatorMap: Record<string, string> = {}
+      const subIndicatorList: Array<{ name: string, paneId: string }> = []
       props.subIndicators!.forEach(indicator => {
         const paneId = createIndicator(initializedWidget, indicator, true)
         if (paneId) {
           setPaneYAxisWheelListener(paneId)
           const name = typeof indicator === 'string' ? indicator : indicator.name
-          subIndicatorMap[name] = paneId
+          subIndicatorList.push({ name, paneId })
         }
       })
-      setSubIndicators(subIndicatorMap)
+      setSubIndicators(subIndicatorList)
       initializedWidget.loadMore(timestamp => {
         setLoading(true)
         const get = async () => {
@@ -654,9 +685,12 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
                 }
                 setMainIndicators(newMainIndicators)
               } else {
-                const newIndicators = { ...subIndicators() }
+                const newIndicators = [...subIndicators()]
                 initializedWidget.removeIndicator(data.paneId, data.indicatorName)
-                delete newIndicators[data.indicatorName]
+                const index = newIndicators.findIndex(i => i.name === data.indicatorName && i.paneId === data.paneId)
+                if (index > -1) {
+                  newIndicators.splice(index, 1)
+                }
                 setSubIndicators(newIndicators)
               }
             }
@@ -820,21 +854,21 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
             setMainIndicators(newMainIndicators)
           }}
           onSubIndicatorChange={data => {
-            const newSubIndicators = { ...subIndicators() }
             if (data.added) {
               const paneId = createIndicator(widget(), data.name)
               if (paneId) {
                 // @ts-ignore
                 widget()?.setPaneYAxisWheelListener?.(paneId)
-                newSubIndicators[data.name] = paneId
+                setSubIndicators([...subIndicators(), { name: data.name, paneId }])
               }
             } else {
               if (data.paneId) {
                 widget()?.removeIndicator(data.paneId, data.name)
-                delete newSubIndicators[data.name]
+                const newSubIndicators = subIndicators().filter(i => i.name !== data.name || i.paneId !== data.paneId)
+                setSubIndicators(newSubIndicators)
               }
             }
-            setSubIndicators(newSubIndicators)
+            setIndicatorUpdateCount(indicatorUpdateCount() + 1)
           }}/>
       </Show>
       <Show when={settingModalVisible()}>
@@ -878,6 +912,20 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
           onConfirm={(params)=> {
             const modalParams = indicatorSettingModalParams()
             widget()?.overrideIndicator({ name: modalParams.indicatorName, calcParams: params }, modalParams.paneId)
+            
+            // Sync internal signals to ensure configs are remembered in state
+            if (modalParams.paneId === 'candle_pane') {
+              const newMainIndicators = mainIndicators().map(i => {
+                const name = typeof i === 'string' ? i : i.name
+                if (name === modalParams.indicatorName) {
+                  return { name, calcParams: params }
+                }
+                return i
+              })
+              setMainIndicators(newMainIndicators)
+            } else {
+              setSubIndicators([...subIndicators()])
+            }
             setIndicatorUpdateCount(indicatorUpdateCount() + 1)
           }}
         />

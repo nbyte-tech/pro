@@ -2,9 +2,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
-
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
-
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import { Component, createMemo } from 'solid-js'
+import { Component } from 'solid-js'
 
 import { Modal, List, Checkbox } from '../../component'
 
@@ -29,7 +29,7 @@ type OnIndicatorChange = (
 export interface IndicatorModalProps {
   locale: string
   mainIndicators: string[]
-  subIndicators: object
+  subIndicators: any[] | object
   onMainIndicatorChange: OnIndicatorChange
   onSubIndicatorChange: OnIndicatorChange
   onClose: () => void
@@ -70,13 +70,20 @@ const IndicatorModal: Component<IndicatorModalProps> = props => {
             'VR', 'WR', 'MTM', 'EMV', 'SAR',
             'SMA', 'ROC', 'PVT', 'BBI', 'AO', 'VWAP'
           ].map(name => {
-            const checked = name in props.subIndicators
+            const getCheckedInfo = () => {
+              if (Array.isArray(props.subIndicators)) {
+                const info = props.subIndicators.find(i => i.name === name)
+                return { checked: !!info, paneId: info?.paneId || '' }
+              }
+              const paneId = (props.subIndicators as any)[name]
+              return { checked: name in props.subIndicators, paneId: paneId || '' }
+            }
+            const { checked, paneId } = getCheckedInfo()
             return (
               <li
                 class="row"
                 onClick={_ => {
-                  // @ts-expect-error
-                  props.onSubIndicatorChange({ name, paneId: props.subIndicators[name] ?? '', added: !checked });
+                  props.onSubIndicatorChange({ name, paneId, added: !checked });
                 }}>
                 <Checkbox checked={checked} label={i18n(name.toLowerCase(), props.locale)}/>
               </li>
