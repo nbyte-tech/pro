@@ -6,21 +6,33 @@
   align-items: center;
   justify-content: center;
   outline: none;
-  width: 90px;
-  height: 36px;
+  min-width: 100px;
+  height: 38px;
+  padding: 0 16px;
   font-size: 14px;
-  border-radius: 2px;
-  border: solid 1px var(--klinecharts-pro-primary-color);
+  border-radius: 6px;
   cursor: pointer;
   background-color: transparent;
-  margin-left: 20px;
+  margin-left: 12px;
   box-sizing: border-box;
+  transition: all .2s;
+  font-weight: 500;
+  border: solid 1px var(--klinecharts-pro-primary-color);
   &.confirm {
     color: #ffffff;
     background-color: var(--klinecharts-pro-primary-color);
+    &:hover {
+      opacity: 0.9;
+    }
+    &:active {
+      opacity: 1;
+    }
   }
   &.cancel {
     color: var(--klinecharts-pro-primary-color);
     border: solid 1px var(--klinecharts-pro-primary-color);
+    &:hover {
+      background-color: var(--klinecharts-pro-hover-background-color);
+    }
   }
 }

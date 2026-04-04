@@ -130,7 +130,7 @@
   "reverse_coordinate": "Invert Axis",
   "grid_show": "Grid Lines",
   "extended_hours": "Extended Hours",
-  "restore_default": "Restore Defaults",
+  "restore_default": "Restore",
   "remove_selected": "Remove Selected Drawing",
   "remove_all": "Remove All Drawings",
   "reset_chart": "Reset Chart",

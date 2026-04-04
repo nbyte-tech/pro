@@ -14,14 +14,14 @@
 
 import { VoidComponent } from "solid-js";
 
-const Loding: VoidComponent = () => {
+const Loading: VoidComponent = () => {
   return (
     <div class="klinecharts-pro-loading">
-      <i class="circle1" />
-      <i class="circle2" />
-      <i class="circle3" />
+      <svg viewBox="0 0 24 24" class="spinner">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="40 20" />
+      </svg>
     </div>
   )
 }
 
-export default Loding
+export default Loading

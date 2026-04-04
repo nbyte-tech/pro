@@ -5,28 +5,32 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   font-size: 14px;
-  color: var(---klinecharts-pro-text-color);
+  color: var(--klinecharts-pro-text-color);
   min-height: 200px;
   &::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 5px;
+    height: 5px;
   }
   &::-webkit-scrollbar-thumb {
-    width: 8px;
-    height: 8px;
-    border-radius: 4px;
+    width: 5px;
+    height: 5px;
+    border-radius: 5px;
     background-color: var(--klinecharts-pro-border-color);
   }
   li {
     display: flex;
     flex-direction: row;
     align-items: center;
-    height: 40px;
-    padding: 0 20px;
+    height: 42px;
+    padding: 0 16px;
+    margin: 2px 4px;
+    border-radius: 6px;
     box-sizing: border-box;
     cursor: pointer;
+    transition: all .2s;
     &:hover {
       background-color: var(--klinecharts-pro-hover-background-color);
     }

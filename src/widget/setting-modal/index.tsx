@@ -90,7 +90,7 @@ const SettingModal: Component<SettingModalProps> = props => {
                   }
                   component = (
                     <Select
-                      style={{ width: '120px' }}
+                      style={{ width: '250px' }}
                       value={displayValue}
                       dataSource={option.dataSource}
                       onSelected={(data) => {

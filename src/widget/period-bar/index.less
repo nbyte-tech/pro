@@ -39,7 +39,12 @@
     font-weight: bold;
     box-sizing: border-box;
     border-right: solid 1px var(--klinecharts-pro-border-color);
-    cursor: pointer;
+    &.cursor-pointer {
+      cursor: pointer;
+    }
+    &.cursor-default {
+      cursor: default;
+    }
     img {
       width: 20px;
       height: 20px;
@@ -59,7 +64,7 @@
   .period {
     padding: 2px 6px;
     margin: 0 4px;
-    border-radius: 2px;
+    border-radius: 4px;
     &:hover {
       background-color: var(--klinecharts-pro-hover-background-color);
     }
@@ -83,8 +88,8 @@
       color: var(--klinecharts-pro-primary-color);
     }
     svg {
-      width: 16px;
-      height: 16px;
+      width: 18px;
+      height: 18px;
       margin-right: 4px;
     }
     &.screenshot, &.full-screen {

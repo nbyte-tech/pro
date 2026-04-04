@@ -65,12 +65,12 @@
     top: 4px;
     left: 50%;
     transform: translateX(-50%);
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 10px;
     font-weight: bold;
-    padding: 1px 4px;
+    padding: 2px 6px;
     color: var(--klinecharts-pro-text-second-color);
-    box-shadow: 0 3px 3px 0 rgba(50, 50, 50, .3);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, .15);
     border: solid 1px var(--klinecharts-pro-border-color);
     background-color: var(--klinecharts-pro-background-color);
   }
@@ -94,6 +94,30 @@
     margin-left: 0;
     &[data-drawing-bar-visible="false"] {
       width: 100%;
+    }
+  }
+  &-setting-button {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    z-index: 50;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    color: var(--klinecharts-pro-text-second-color);
+    transition: all 0.2s;
+    background-color: var(--klinecharts-pro-background-color);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &:hover {
+      color: var(--klinecharts-pro-primary-color);
+      background-color: var(--klinecharts-pro-hover-background-color);
+    }
+    svg {
+      width: 18px;
+      height: 18px;
     }
   }
 }

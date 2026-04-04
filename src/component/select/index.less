@@ -6,7 +6,7 @@
   flex-direction: row;
   align-items: center;
   cursor: pointer;
-  height: 34px;
+  height: 38px;
   width: 100px;
   outline: none;
   color: var(--klinecharts-pro-text-color);
@@ -17,54 +17,65 @@
     align-items: center;
     height: 100%;
     width: 100%;
-    padding: 0 10px;
+    padding: 0 12px;
     justify-content: space-between;
     border: solid 1px var(--klinecharts-pro-border-color);
-    border-radius: 2px;
+    border-radius: 6px;
     box-sizing: border-box;
+    transition: all .2s;
+    &:hover {
+      border-color: var(--klinecharts-pro-primary-color);
+    }
     .arrow {
-      display: inline;
-      width: 0;
-      height: 0;
-      border-left: 5px solid transparent;
-      border-right: 5px solid transparent;
-      border-top: 6px solid var(--klinecharts-pro-text-color);
+      width: 16px;
+      height: 16px;
+      fill: var(--klinecharts-pro-text-second-color);
       transition: all .2s;
     }
   }
   .drop-down-container {
     background-color: var(--klinecharts-pro-popover-background-color);
-    box-shadow: 0 6px 12px 0 rgba(0, 0, 0, .3);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
     position: absolute;
     left: 0;
     width: 100%;
-    top: calc(100% + 1px);
-    transition: all .2s;
-    transform: scaleY(0);
+    top: calc(100% + 4px);
+    transition: all .2s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: scaleY(0.9);
     transform-origin: top;
     opacity: 0;
     z-index: 100;
-    border-radius: 2px;
+    border-radius: 8px;
     max-height: 200px;
+    overflow-x: hidden;
     overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--klinecharts-pro-border-color);
+      border-radius: 4px;
+    }
+
     ul {
       list-style: none;
       margin: 0;
-      padding: 0;
+      padding: 4px;
       overflow: hidden;
       li {
         display: flex;
         flex-direction: row;
         align-items: center;
-        height: 40px;
+        height: 34px;
         padding: 0 10px;
-        &:first-child {
-          border-top-left-radius: 2px;
-          border-top-right-radius: 2px;
-        }
+        border-radius: 4px;
+        margin-bottom: 2px;
         &:last-child {
-          border-bottom-left-radius: 2px;
-          border-bottom-right-radius: 2px;
+          margin-bottom: 0;
         }
         &:hover {
           background-color: var(--klinecharts-pro-hover-background-color);
