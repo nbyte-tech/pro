@@ -47,7 +47,7 @@ const IndicatorSettingModal: Component<IndicatorSettingModalProps> = props => {
   const getParams = (p: any[]) => {
     const config = getConfig(props.params.indicatorName)
     const params: any[] = []
-    utils.clone(p).forEach((param: any, i: number) => {
+    utils.clone(p)?.forEach((param: any, i: number) => {
       if (!utils.isValid(param) || param === '') {
         if (config[i] && 'default' in config[i]) {
           params.push(config[i]['default'])

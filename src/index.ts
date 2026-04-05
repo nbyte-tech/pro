@@ -25,8 +25,8 @@ import { Datafeed, SymbolInfo, Period, DatafeedSubscribeCallback, ChartProOption
 
 import './index.less'
 
-overlays.forEach(o => { registerOverlay(o) })
-indicators.forEach(i => { registerIndicator(i) })
+overlays?.forEach(o => { registerOverlay(o) })
+indicators?.forEach(i => { registerIndicator(i) })
 
 export {
   DefaultDatafeed,

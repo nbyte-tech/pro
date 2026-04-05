@@ -52,7 +52,7 @@ function broadcastCrosshair (source: any, crosshair: any) {
       }
     }
   }
-  chartInstances.forEach(inst => {
+  chartInstances?.forEach(inst => {
     if (inst !== source && inst.drawingSyncId() === syncId) {
       inst.receiveCrosshair(broadcastData, source.symbol())
     }
@@ -62,7 +62,7 @@ function broadcastCrosshair (source: any, crosshair: any) {
 function broadcastOverlay (source: any, type: string, data: any) {
   const ticker = source.symbol().ticker
   const syncId = source.drawingSyncId()
-  chartInstances.forEach(inst => {
+  chartInstances?.forEach(inst => {
     if (inst !== source) {
       if (inst.symbol().ticker === ticker) {
         inst.receiveOverlay(type, data)
@@ -76,7 +76,7 @@ function broadcastOverlay (source: any, type: string, data: any) {
 function broadcastIndicator (source: any, data: any) {
   const syncId = source.drawingSyncId()
   if (!syncId) return
-  chartInstances.forEach(inst => {
+  chartInstances?.forEach(inst => {
     if (inst !== source && inst.drawingSyncId() === syncId) {
       inst.receiveIndicator(data)
     }
@@ -84,7 +84,7 @@ function broadcastIndicator (source: any, data: any) {
 }
 
 function broadcastStyles (source: any, styles: DeepPartial<Styles>) {
-  chartInstances.forEach(inst => {
+  chartInstances?.forEach(inst => {
     if (inst !== source) {
       inst.receiveStyles(styles)
     }
@@ -308,7 +308,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
     const main = mainIndicators()
     if (w) {
       // Reconcile main indicators on candle_pane
-      main.forEach(item => {
+      main?.forEach(item => {
         const name = typeof item === 'string' ? item : item.name
         const params = typeof item === 'string' ? undefined : item.calcParams
         const styles = typeof item === 'string' ? undefined : item.styles
@@ -360,7 +360,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
 
       // Reconcile overlays
       const os = overlays() || []
-      os.forEach(o => {
+      os?.forEach(o => {
         const existing = w.getOverlayById(o.id!)
         if (!existing) {
           createOverlay(o as OverlayCreate)
@@ -414,7 +414,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       // @ts-ignore
       const instances = w._chartStore.getOverlayStore().getInstances()
       const ids = instances.map((i: any) => i.id)
-      ids.forEach((id: string) => w.removeOverlay(id))
+      ids?.forEach((id: string) => w.removeOverlay(id))
     }
     setOverlays([...os])
     setOverlayUpdateCount(overlayUpdateCount() + 1)
@@ -545,12 +545,12 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
     chartInstances.add(instance)
     const ticker = symbol().ticker
     const currentOverlays = instance.getOverlays()
-    chartInstances.forEach(inst => {
+    chartInstances?.forEach(inst => {
       if (inst !== instance && inst.symbol().ticker === ticker) {
         // Sync with existing charts of the same symbol
-        currentOverlays.forEach((o: OverlayConfig) => inst.receiveOverlay('create', o))
+        currentOverlays?.forEach((o: OverlayConfig) => inst.receiveOverlay('create', o))
         const otherOverlays = inst.getOverlays()
-        otherOverlays.forEach((o: OverlayConfig) => instance.receiveOverlay('create', o))
+        otherOverlays?.forEach((o: OverlayConfig) => instance.receiveOverlay('create', o))
       }
     })
   })
@@ -916,11 +916,11 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       
       setPaneYAxisWheelListener('candle_pane')
 
-      mainIndicators().forEach(indicator => {
+      mainIndicators()?.forEach(indicator => {
         createIndicator(initializedWidget, indicator, true, { id: 'candle_pane' })
       })
       const subIndicatorList: Array<{ name: string, paneId: string }> = []
-      props.subIndicators!.forEach(indicator => {
+      props.subIndicators!?.forEach(indicator => {
         const paneId = createIndicator(initializedWidget, indicator, true)
         if (paneId) {
           setPaneYAxisWheelListener(paneId)
@@ -992,7 +992,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         if (widgetRef) {
           const reset = () => {
             const children = (widgetRef as HTMLElement).querySelectorAll('div')
-            Array.from(children).forEach(child => {
+            Array.from(children)?.forEach(child => {
               (child as HTMLElement).style.cursor = 'auto'
             })
             ;(widgetRef as HTMLElement).style.cursor = 'auto'
@@ -1098,10 +1098,10 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
     const s = symbol()
     if (prev && prev.ticker !== s.ticker) {
       applyOverlays([], false)
-      chartInstances.forEach(inst => {
+      chartInstances?.forEach(inst => {
         if (inst !== instance && inst.symbol().ticker === s.ticker) {
           const otherOverlays = inst.getOverlays()
-          otherOverlays.forEach((o: OverlayConfig) => createOverlay(o))
+          otherOverlays?.forEach((o: OverlayConfig) => createOverlay(o))
         }
       })
     }
@@ -1211,7 +1211,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
           }}
           onRestoreDefault={(options: SelectDataSourceItem[]) => {
             const style = {}
-            options.forEach(option => {
+            options?.forEach(option => {
               const key = option.key
               lodashSet(style, key, utils.formatValue(widgetDefaultStyles(), key))
             })

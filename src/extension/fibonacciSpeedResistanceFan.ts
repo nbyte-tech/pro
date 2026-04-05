@@ -32,7 +32,7 @@ const fibonacciSpeedResistanceFan: OverlayTemplate = {
       const xDistance = coordinates[1].x - coordinates[0].x
       const yDistance = coordinates[1].y - coordinates[0].y
       const percents = [1, 0.75, 0.618, 0.5, 0.382, 0.25, 0]
-      percents.forEach(percent => {
+      percents?.forEach(percent => {
         const x = coordinates[1].x - xDistance * percent
         const y = coordinates[1].y - yDistance * percent
         lines1.push({ coordinates: [{ x, y: coordinates[0].y }, { x, y: coordinates[1].y }] })

@@ -30,7 +30,7 @@ const fibonacciSegment: OverlayTemplate = {
       const points = overlay.points
       // @ts-expect-error
       const valueDif = points[0].value - points[1].value
-      percents.forEach(percent => {
+      percents?.forEach(percent => {
         const y = coordinates[1].y + yDif * percent
         // @ts-expect-error
         const price = (points[1].value + valueDif * percent).toFixed(precision.price)
