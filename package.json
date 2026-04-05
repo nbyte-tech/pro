@@ -1,6 +1,6 @@
 {
   "name": "@tradestack/klinecharts-pro",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Financial chart built out of the box based on KLineChart.",
   "type": "module",
   "main": "./dist/klinecharts-pro.umd.js",
