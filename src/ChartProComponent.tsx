@@ -326,7 +326,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       
       // Reconcile sub indicators
       const subs = props.subIndicators || []
-      subs.forEach(item => {
+      subs?.forEach(item => {
         const name = typeof item === 'string' ? item : item.name
         const params = typeof item === 'string' ? undefined : item.calcParams
         const styles = typeof item === 'string' ? undefined : item.styles
@@ -334,7 +334,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         // Find if it exists in any non-candle pane
         let existingPaneId: string | undefined = undefined
         // @ts-expect-error
-        w._panes.forEach(pane => {
+        w._panes?.forEach(pane => {
           if (pane.getId() !== 'candle_pane' && w.getIndicatorByPaneId(pane.getId(), name)) {
             existingPaneId = pane.getId()
           }
